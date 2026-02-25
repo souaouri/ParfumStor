@@ -1,9 +1,7 @@
 
 import {request, response} from "express";
 import bcrypt from 'bcrypt';
-
-import { getUserEmail } from "../models/user"
-import { getUserPassword } from "../models/user"
+import { getUserEmail, getUserPassword, createUser } from "../models/user"
 
 export const Login = async (req: Request, res: Response) => {
     try{
@@ -43,4 +41,25 @@ export const Logout = (req: Request, res: Response) => {
 export const Register = async (req: Request, res: Response) => {
     try {
         const { email, password, confirmPassword } = req.body as { email: string, password: string, confirmPassword: string};
+        if (!email || !password || !confirmPassword) {
+            return res.status(400).json({ message: 'All the fields are required' });
+        }
+        if (password !== confirmPassword) {
+            return res.status(400).json({ message: 'Passwords do not match' });
+        }
+        const existingEmail = await getUserEmail(email);
+        if (existingEmail) {
+            return res.status(400).json({ message: 'Email already exists' });
+        }
+        // Hash the password before storing it in the database
+        const hashedPassword = await bcrypt.hash(password, 10);
         
+        // Here you would insert the new user into the database with the hashed password
+        await createUser(email, hashedPassword);
+        
+        return res.status(201).json({ message: 'Registration successful' });
+    } catch (error) {
+        console.error('Error during registration:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+}

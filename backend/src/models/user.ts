@@ -33,3 +33,15 @@ export async function getUserPassword(email: string): Promise<string | null> {
         throw error;
     }
 }
+
+export async function createUser(email: string, password: string): Promise<void> {
+    try {
+        await pool.query(
+            "INSERT INTO users (email, password) VALUES ($1, $2)",
+            [email, password]
+        );
+    } catch (error) {
+        console.error('Error creating user:', error);
+        throw error;
+    }
+}

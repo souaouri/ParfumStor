@@ -33,6 +33,8 @@ async function initializeDatabase() {
                 price DECIMAL(10, 2) NOT NULL,
                 description TEXT,
                 image VARCHAR(255),
+                stock INTEGER DEFAULT 0,
+                status VARCHAR(50) DEFAULT 'available',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )`);
 

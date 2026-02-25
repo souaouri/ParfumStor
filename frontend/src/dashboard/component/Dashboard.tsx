@@ -1,6 +1,8 @@
 // Dashboard.tsx
 import React, { useState } from 'react';
+import { User, ShoppingCart } from 'lucide-react';
 import Cart from './Cart';
+import AuthModal from './AuthModal';
 
 const products = [
   {
@@ -42,6 +44,7 @@ const products = [
 
 const Dashboard = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [cartItems] = useState([
     {
       id: 1,
@@ -62,9 +65,12 @@ const Dashboard = () => {
           <a href="#" className="hover:opacity-60">Essentials</a>
         </div>
         <div className="flex gap-4 items-center">
-          <span>Search</span>
-          <button onClick={() => setIsCartOpen(true)} className="hover:opacity-60 cursor-pointer">
-            Cart ({cartItems.length})
+          <button onClick={() => setIsAuthOpen(true)} className="hover:opacity-60 cursor-pointer">
+            <User size={18} />
+          </button>
+          <button onClick={() => setIsCartOpen(true)} className="hover:opacity-60 cursor-pointer flex items-center gap-2">
+            <ShoppingCart size={18} />
+            <span>({cartItems.length})</span>
           </button>
         </div>
       </nav>
@@ -74,6 +80,12 @@ const Dashboard = () => {
         isOpen={isCartOpen} 
         onClose={() => setIsCartOpen(false)} 
         cartItems={cartItems} 
+      />
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={isAuthOpen} 
+        onClose={() => setIsAuthOpen(false)} 
       />
 
       {/* Hero Section */}
