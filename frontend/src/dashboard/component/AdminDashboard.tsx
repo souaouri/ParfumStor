@@ -8,6 +8,7 @@ interface Product {
   price: number;
   description?: string;
   image?: string;
+  image2?: string;
   stock?: number;
   status?: string;
 }
@@ -29,11 +30,14 @@ const AdminDashboard = () => {
   const [showEditProduct, setShowEditProduct] = useState(false);
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [image2File, setImage2File] = useState<File | null>(null);
   const [formData, setFormData] = useState<Product>({
     name: '',
     price: 0,
     description: '',
     image: '',
+    image2: '',
     stock: 0,
     status: 'available'
   });
@@ -105,6 +109,7 @@ const AdminDashboard = () => {
     setFormData({
       name: product.name,
       price: product.price,
+      image2: product.image2 || '',
       description: product.description || '',
       image: product.image || '',
       stock: product.stock || 0,
@@ -120,12 +125,31 @@ const AdminDashboard = () => {
     if (!editingProductId) return;
 
     try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('price', formData.price.toString());
+      formDataToSend.append('description', formData.description || '');
+      formDataToSend.append('stock', (formData.stock || 0).toString());
+      formDataToSend.append('status', formData.status || 'available');
+      
+      // Include existing images if no new images selected
+      if (!imageFile && formData.image) {
+        formDataToSend.append('image', formData.image);
+      }
+      if (!image2File && formData.image2) {
+        formDataToSend.append('image2', formData.image2);
+      }
+      
+      if (imageFile) {
+        formDataToSend.append('image', imageFile);
+      }
+      if (image2File) {
+        formDataToSend.append('image2', image2File);
+      }
+
       const response = await fetch(`http://localhost:5000/api/products/${editingProductId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+        body: formDataToSend,
       });
       
       if (response.ok) {
@@ -135,9 +159,12 @@ const AdminDashboard = () => {
           price: 0,
           description: '',
           image: '',
+          image2: '',
           stock: 0,
           status: 'available'
         });
+        setImageFile(null);
+        setImage2File(null);
         setShowEditProduct(false);
         setEditingProductId(null);
         // Refresh products list
@@ -154,12 +181,23 @@ const AdminDashboard = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('price', formData.price.toString());
+      formDataToSend.append('description', formData.description || '');
+      formDataToSend.append('stock', (formData.stock || 0).toString());
+      formDataToSend.append('status', formData.status || 'available');
+      
+      if (imageFile) {
+        formDataToSend.append('image', imageFile);
+      }
+      if (image2File) {
+        formDataToSend.append('image2', image2File);
+      }
+
       const response = await fetch('http://localhost:5000/api/products', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+        body: formDataToSend,
       });
       
       if (response.ok) {
@@ -169,9 +207,12 @@ const AdminDashboard = () => {
           price: 0,
           description: '',
           image: '',
+          image2: '',
           stock: 0,
           status: 'available'
         });
+        setImageFile(null);
+        setImage2File(null);
         setShowAddProduct(false);
         // Refresh products list
         fetchProducts();
@@ -287,14 +328,25 @@ const AdminDashboard = () => {
 
                   <div>
                     <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2">
-                      Image URL
+                      Product Image
                     </label>
                     <input
-                      type="text"
-                      value={formData.image}
-                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
-                      placeholder="https://example.com/image.jpg"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-red-600 file:text-white hover:file:bg-red-700 file:cursor-pointer"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2">
+                      Hover Image
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setImage2File(e.target.files?.[0] || null)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-red-600 file:text-white hover:file:bg-red-700 file:cursor-pointer"
                     />
                   </div>
 
@@ -392,15 +444,32 @@ const AdminDashboard = () => {
 
                   <div>
                     <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2">
-                      Image URL
+                      Product Image
                     </label>
                     <input
-                      type="text"
-                      value={formData.image}
-                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
-                      placeholder="https://example.com/image.jpg"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-red-600 file:text-white hover:file:bg-red-700 file:cursor-pointer"
                     />
+                    {formData.image && (
+                      <p className="text-xs text-zinc-500 mt-2">Current: {formData.image}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2">
+                      Hover Image
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setImage2File(e.target.files?.[0] || null)}
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-red-600 file:text-white hover:file:bg-red-700 file:cursor-pointer"
+                    />
+                    {formData.image2 && (
+                      <p className="text-xs text-zinc-500 mt-2">Current: {formData.image2}</p>
+                    )}
                   </div>
 
                   <div>

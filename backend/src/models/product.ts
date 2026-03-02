@@ -6,6 +6,7 @@ export interface Product {
     price: number;
     description?: string;
     image?: string;
+    image2?: string;
     stock?: number;
     status?: string;
 }
@@ -13,10 +14,10 @@ export interface Product {
 export async function createProduct(product: Product): Promise<Product> {
     try {
         const result = await pool.query(
-            `INSERT INTO products (name, price, description, image, stock, status) 
-             VALUES ($1, $2, $3, $4, $5, $6) 
+            `INSERT INTO products (name, price, description, image, image2, stock, status) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7) 
              RETURNING *`,
-            [product.name, product.price, product.description, product.image, product.stock || 0, product.status || 'available']
+            [product.name, product.price, product.description, product.image, product.image2, product.stock || 0, product.status || 'available']
         );
         return result.rows[0];
     } catch (error) {
@@ -59,10 +60,10 @@ export async function updateProduct(id: number, product: Product): Promise<Produ
     try {
         const result = await pool.query(
             `UPDATE products 
-             SET name = $1, price = $2, description = $3, image = $4, stock = $5, status = $6 
-             WHERE id = $7 
+             SET name = $1, price = $2, description = $3, image = $4, image2 = $5, stock = $6, status = $7 
+             WHERE id = $8 
              RETURNING *`,
-            [product.name, product.price, product.description, product.image, product.stock || 0, product.status || 'available', id]
+            [product.name, product.price, product.description, product.image, product.image2, product.stock || 0, product.status || 'available', id]
         );
         return result.rows.length > 0 ? result.rows[0] : null;
     } catch (error) {

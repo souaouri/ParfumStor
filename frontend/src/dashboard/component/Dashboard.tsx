@@ -1,50 +1,24 @@
 // Dashboard.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, ShoppingCart } from 'lucide-react';
 import Cart from './Cart';
 import AuthModal from './AuthModal';
 
-const products = [
-  {
-    id: 1,
-    name: "THE MIXED BURGUNDY & WHITE EDITION (6+6 PACK)",
-    price: "180.00 dh",
-    status: "Sold out",
-    image: "https://via.placeholder.com/400x500?text=Mixed+Glass+Set" // Replace with your actual assets
-  },
-  {
-    id: 2,
-    name: "THE FULL BURGUNDY EDITION (PACK OF 12)",
-    price: "200.00 dh",
-    status: "Sold out",
-    image: "https://via.placeholder.com/400x500?text=Burgundy+Glass+Set"
-  },
-  {
-    id: 3,
-    name: "TRIMLIA HOODIE",
-    price: "500.00 dh",
-    status: "Sold out",
-    image: "https://via.placeholder.com/400x500?text=Hoodie"
-  },
-  {
-    id: 4,
-    name: "T-SHIRT LEGACY CODE",
-    price: "290.00 dh",
-    status: "Sold out",
-    image: "https://via.placeholder.com/400x500?text=T-Shirt"
-  },
-  {
-    id: 5,
-    name: "BOB HAMROUN",
-    price: "210.00 dh",
-    status: "Sold out",
-    image: "https://via.placeholder.com/400x500?text=Bucket+Hat"
-  }
-];
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  status?: string;
+  image?: string;
+  image2?: string;
+  description?: string;
+  stock?: number;
+}
 
 const Dashboard = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
   const [cartItems] = useState([
     {
       id: 1,
@@ -54,6 +28,23 @@ const Dashboard = () => {
       image: "https://via.placeholder.com/100x120?text=Product"
     }
   ]); // Sample cart item
+
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/products');
+        const data = await response.json();
+        if (data.products) {
+          setProducts(data.products);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   return (
     <div className="bg-black text-white min-h-screen font-sans">
@@ -106,25 +97,50 @@ const Dashboard = () => {
 
       {/* Product Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-zinc-800">
-        {products.map((product) => (
-          <div key={product.id} className="border-r border-b border-zinc-800 p-6 flex flex-col group relative overflow-hidden">
-            <div className="flex justify-between items-start text-[10px] uppercase tracking-wider mb-8">
-              <div>
-                <h3 className="mb-1">{product.name}</h3>
-                <p className="text-zinc-500">{product.price}</p>
-              </div>
-              <span className="text-zinc-500 italic">{product.status}</span>
-            </div>
-            
-            <div className="flex-grow flex items-center justify-center py-10">
-              <img 
-                src={product.image} 
-                alt={product.name} 
-                className="max-h-80 object-contain transition-transform duration-700 group-hover:scale-110"
-              />
-            </div>
+        {products.length === 0 ? (
+          <div className="col-span-full py-20 text-center text-zinc-500">
+            <p>No products available</p>
           </div>
-        ))}
+        ) : (
+          products.map((product) => (
+            <div key={product.id} className="border-r border-b border-zinc-800 p-6 flex flex-col group relative overflow-hidden">
+              <div className="flex justify-between items-start text-[10px] uppercase tracking-wider mb-8">
+                <div>
+                  <h3 className="mb-1">{product.name}</h3>
+                  <p className="text-zinc-500">{product.price} dh</p>
+                </div>
+                <span className={`italic ${
+                  product.status === 'available' 
+                    ? 'text-green-500' 
+                    : product.status === 'sold out' 
+                    ? 'text-red-500' 
+                    : product.status === 'coming soon'
+                    ? 'text-orange-500'
+                    : 'text-zinc-500'
+                }`}>
+                  {product.status || 'Available'}
+                </span>
+              </div>
+              
+              <div className="flex-grow flex items-center justify-center py-10 relative">
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <img 
+                    src={product.image ? `http://localhost:5000${product.image}` : 'https://via.placeholder.com/400x500?text=No+Image'} 
+                    alt={product.name} 
+                    className={`max-h-80 object-contain transition-all duration-700 group-hover:scale-110 relative z-10 ${product.image2 ? 'group-hover:opacity-0' : ''}`}
+                  />
+                  {product.image2 && (
+                    <img 
+                      src={`http://localhost:5000${product.image2}`} 
+                      alt={`${product.name} hover`} 
+                      className="max-h-80 object-contain absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 transition-all duration-700 group-hover:opacity-100 group-hover:scale-110 pointer-events-none z-0"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
