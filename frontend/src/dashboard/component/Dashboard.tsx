@@ -1,5 +1,6 @@
 // Dashboard.tsx
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, ShoppingCart } from 'lucide-react';
 import Cart from './Cart';
 import AuthModal from './AuthModal';
@@ -16,6 +17,7 @@ interface Product {
 }
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -45,6 +47,10 @@ const Dashboard = () => {
 
     fetchProducts();
   }, []);
+
+  const handleProductClick = (product: Product) => {
+    navigate(`/product/${product.id}`);
+  };
 
   return (
     <div className="bg-black text-white min-h-screen font-sans">
@@ -103,7 +109,11 @@ const Dashboard = () => {
           </div>
         ) : (
           products.map((product) => (
-            <div key={product.id} className="border-r border-b border-zinc-800 p-6 flex flex-col group relative overflow-hidden">
+            <div 
+              key={product.id} 
+              className="border-r border-b border-zinc-800 p-6 flex flex-col group relative overflow-hidden cursor-pointer"
+              onClick={() => handleProductClick(product)}
+            >
               <div className="flex justify-between items-start text-[10px] uppercase tracking-wider mb-8">
                 <div>
                   <h3 className="mb-1">{product.name}</h3>
