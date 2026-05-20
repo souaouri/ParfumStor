@@ -1,6 +1,7 @@
 // ProductDetail.tsx
-import React, { useState } from 'react';
+import { useState, type FC, type FormEvent } from 'react';
 import { X, Minus, Plus } from 'lucide-react';
+import FeedbackModal from './FeedbackModal';
 
 interface Product {
   id: number;
@@ -19,9 +20,19 @@ interface ProductDetailProps {
   onClose: () => void;
 }
 
-const ProductDetail: React.FC<ProductDetailProps> = ({ product, isOpen, onClose }) => {
+const ProductDetail: FC<ProductDetailProps> = ({ product, isOpen, onClose }) => {
   const [selectedSize, setSelectedSize] = useState<'5ml' | '10ml' | 'full'>('full');
   const [quantity, setQuantity] = useState(1);
+  const [isBuyNowOpen, setIsBuyNowOpen] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [location, setLocation] = useState('');
+  const [feedback, setFeedback] = useState<{ isOpen: boolean; title: string; message: string; type: 'success' | 'error' }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'success',
+  });
 
   // Calculate price based on size
   const getPriceBySize = () => {
@@ -46,6 +57,55 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, isOpen, onClose 
     }
   };
 
+  const handleBuyNowSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const submitOrder = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            customerName: fullName,
+            phone: phoneNumber,
+            location,
+            productName: product.name,
+            size: selectedSize,
+            quantity,
+            totalPrice: Number(getPriceBySize()) * quantity,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create order');
+        }
+
+        setFeedback({
+          isOpen: true,
+          title: 'Order Submitted',
+          message: 'Your order details were submitted successfully.',
+          type: 'success',
+        });
+        setIsBuyNowOpen(false);
+        setFullName('');
+        setPhoneNumber('');
+        setLocation('');
+      } catch (error) {
+        console.error('Error creating order:', error);
+        setFeedback({
+          isOpen: true,
+          title: 'Submission Failed',
+          message: 'Failed to submit order. Please try again.',
+          type: 'error',
+        });
+      }
+    };
+
+    void submitOrder();
+  };
+
   // Check product availability status
   const status = product.status?.toLowerCase() || '';
   
@@ -53,7 +113,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, isOpen, onClose 
   console.log('Product:', product.name, 'Status:', status, 'Stock:', product.stock);
   
   const isComingSoon = status === 'coming soon';
-  const isSoldOut = status === 'sold out';
   const isAvailable = status === 'available' || (!status && (product.stock === undefined || product.stock > 0));
 
   if (!isOpen) return null;
@@ -62,12 +121,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, isOpen, onClose 
     <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black z-[60] animate-fadeIn"
+        className="fixed inset-0 bg-black z-60 animate-fadeIn"
         onClick={onClose}
       />
       
       {/* Product Detail Modal */}
-      <div className="fixed inset-0 z-[70] flex items-center justify-center pointer-events-none">
+      <div className="fixed inset-0 z-70 flex items-center justify-center pointer-events-none">
         <div 
           className="bg-black w-full h-full overflow-y-auto pointer-events-auto animate-scaleIn"
           onClick={(e) => e.stopPropagation()}
@@ -84,13 +143,13 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, isOpen, onClose 
               <img
                 src={product.image ? `http://localhost:5000${product.image}` : 'https://via.placeholder.com/400x500?text=No+Image'}
                 alt={product.name}
-                className="max-h-[500px] object-contain"
+                className="max-h-125 object-contain"
               />
             </div>
 
             {/* Right - Product Details */}
             <div className="p-8 lg:p-12 flex flex-col h-full">
-              <div className="flex-grow">
+              <div className="grow">
                 {/* Product Name */}
                 <h1 className="text-2xl lg:text-3xl font-light tracking-wider uppercase mb-4">
                   {product.name}
@@ -179,6 +238,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, isOpen, onClose 
                       Add to Cart
                     </button>
                     <button
+                      onClick={() => setIsBuyNowOpen(true)}
                       className="flex-1 py-4 text-sm tracking-widest uppercase border border-white text-white hover:bg-white hover:text-black transition-colors"
                     >
                       Buy Now
@@ -214,6 +274,65 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, isOpen, onClose 
         </div>
       </div>
 
+      {isBuyNowOpen && (
+        <div className="fixed inset-0 z-80 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/80" onClick={() => setIsBuyNowOpen(false)} />
+          <div className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl p-6 shadow-2xl">
+            <button
+              onClick={() => setIsBuyNowOpen(false)}
+              className="absolute top-4 right-4 text-zinc-400 hover:text-white"
+            >
+              <X size={20} />
+            </button>
+
+            <h2 className="text-xl uppercase tracking-wider mb-2">Buy Now</h2>
+            <p className="text-sm text-zinc-400 mb-6">Enter your delivery details to submit the order.</p>
+
+            <form className="space-y-4" onSubmit={handleBuyNowSubmit}>
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-zinc-400 mb-2">Full Name</label>
+                <input
+                  required
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                  className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white outline-none focus:border-white"
+                  placeholder="Your full name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-zinc-400 mb-2">Phone Number</label>
+                <input
+                  required
+                  value={phoneNumber}
+                  onChange={(event) => setPhoneNumber(event.target.value)}
+                  className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white outline-none focus:border-white"
+                  placeholder="Your phone number"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-zinc-400 mb-2">Location</label>
+                <textarea
+                  required
+                  value={location}
+                  onChange={(event) => setLocation(event.target.value)}
+                  className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white outline-none focus:border-white min-h-28 resize-none"
+                  placeholder="Your location"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 rounded-lg bg-white text-black uppercase tracking-widest font-medium hover:bg-zinc-200 transition-colors"
+              >
+                Submit Order
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; }
@@ -236,6 +355,14 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, isOpen, onClose 
           animation: scaleIn 0.3s ease-out;
         }
       `}</style>
+
+      <FeedbackModal
+        isOpen={feedback.isOpen}
+        title={feedback.title}
+        message={feedback.message}
+        type={feedback.type}
+        onClose={() => setFeedback((prev) => ({ ...prev, isOpen: false }))}
+      />
     </>
   );
 };

@@ -1,5 +1,5 @@
 // Dashboard.tsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, ShoppingCart } from 'lucide-react';
 import Cart from './Cart';
@@ -16,20 +16,31 @@ interface Product {
   stock?: number;
 }
 
+interface CartItem {
+  id: number;
+  name: string;
+  price: string;
+  quantity: number;
+  image: string;
+  size?: string;
+  cartKey?: string;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
-  const [cartItems] = useState([
-    {
-      id: 1,
-      name: "THE MIXED BURGUNDY & WHITE EDITION",
-      price: "180.00 dh",
-      quantity: 1,
-      image: "https://via.placeholder.com/100x120?text=Product"
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    const storedCart = localStorage.getItem('cartItems');
+    if (!storedCart) return [];
+
+    try {
+      return JSON.parse(storedCart);
+    } catch {
+      return [];
     }
-  ]); // Sample cart item
+  });
 
   // Fetch products from API
   useEffect(() => {
@@ -50,6 +61,11 @@ const Dashboard = () => {
 
   const handleProductClick = (product: Product) => {
     navigate(`/product/${product.id}`);
+  };
+
+  const handleCheckoutSuccess = () => {
+    setCartItems([]);
+    localStorage.setItem('cartItems', JSON.stringify([]));
   };
 
   return (
@@ -77,6 +93,7 @@ const Dashboard = () => {
         isOpen={isCartOpen} 
         onClose={() => setIsCartOpen(false)} 
         cartItems={cartItems} 
+        onCheckoutSuccess={handleCheckoutSuccess}
       />
 
       {/* Auth Modal */}
@@ -132,7 +149,7 @@ const Dashboard = () => {
                 </span>
               </div>
               
-              <div className="flex-grow flex items-center justify-center py-10 relative">
+              <div className="grow flex items-center justify-center py-10 relative">
                 <div className="relative w-full h-full flex items-center justify-center">
                   <img 
                     src={product.image ? `http://localhost:5000${product.image}` : 'https://via.placeholder.com/400x500?text=No+Image'} 

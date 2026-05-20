@@ -44,10 +44,23 @@ async function initializeDatabase() {
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER REFERENCES users(id),
                 product_id INTEGER REFERENCES products(id),
-                quantity INTEGER NOT NULL,
+                customer_name VARCHAR(255),
+                phone VARCHAR(50),
+                location TEXT,
+                product_name VARCHAR(255),
+                size VARCHAR(50),
+                quantity INTEGER NOT NULL DEFAULT 1,
                 total_price DECIMAL(10, 2) NOT NULL,
+                status VARCHAR(50) DEFAULT 'pending',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )`);
+
+        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255)`);
+        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS phone VARCHAR(50)`);
+        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS location TEXT`);
+        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS product_name VARCHAR(255)`);
+        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS size VARCHAR(50)`);
+        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pending'`);
 
         await pool.query(`
             CREATE TABLE IF NOT EXISTS cart (
@@ -57,6 +70,7 @@ async function initializeDatabase() {
                 quantity INTEGER NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )`);
+        
 
         console.log('Database tables created successfully');
     } catch (error) {

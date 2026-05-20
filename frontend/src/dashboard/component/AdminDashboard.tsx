@@ -1,6 +1,8 @@
 // AdminDashboard.tsx
 import React, { useState, useEffect } from 'react';
 import { Package, ShoppingBag, Plus, Trash2, Edit, Check, Clock, X } from 'lucide-react';
+import FeedbackModal from './FeedbackModal';
+import ConfirmModal from './ConfirmModal';
 
 interface Product {
   id?: number;
@@ -14,14 +16,16 @@ interface Product {
 }
 
 interface Order {
-  id: string;
-  customer: string;
-  email: string;
+  id: number;
+  customerName: string;
   phone: string;
-  products: string;
-  total: string;
+  location: string;
+  productName: string;
+  size: string;
+  quantity: number;
+  totalPrice: number;
   status: 'pending' | 'done';
-  date: string;
+  createdAt: string;
 }
 
 const AdminDashboard = () => {
@@ -41,18 +45,26 @@ const AdminDashboard = () => {
     stock: 0,
     status: 'available'
   });
-  const [orders, setOrders] = useState<Order[]>([
-    {
-      id: '#001',
-      customer: 'John Doe',
-      email: 'john@example.com',
-      phone: '+212 6XX XXX XXX',
-      products: '2 items',
-      total: '360.00 dh',
-      status: 'pending',
-      date: '2024-02-25'
-    }
-  ]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [feedback, setFeedback] = useState<{ isOpen: boolean; title: string; message: string; type: 'success' | 'error' }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'success',
+  });
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    type: 'delete-product' | 'delete-order' | null;
+    id: number | null;
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    type: null,
+    id: null,
+    title: '',
+    message: '',
+  });
 
   // Fetch products from API
   const fetchProducts = async () => {
@@ -67,42 +79,145 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchOrders = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/orders');
+      const data = await response.json();
+      if (data.orders) {
+        setOrders(data.orders);
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    }
+  };
+
   // Fetch products on component mount
   useEffect(() => {
-    fetchProducts();
+    const loadDashboardData = async () => {
+      await Promise.all([fetchProducts(), fetchOrders()]);
+    };
+
+    void loadDashboardData();
   }, []);
 
-  const handleStatusChange = (orderId: string, newStatus: 'pending' | 'done') => {
-    setOrders(orders.map(order => 
-      order.id === orderId ? { ...order, status: newStatus } : order
-    ));
-  };
+  const handleStatusChange = async (orderId: number, newStatus: 'pending' | 'done') => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
 
-  const handleRemoveOrder = (orderId: string) => {
-    if (confirm('Are you sure you want to remove this order?')) {
-      setOrders(orders.filter(order => order.id !== orderId));
-    }
-  };
-
-  const handleDeleteProduct = async (productId: number) => {
-    if (confirm('Are you sure you want to delete this product?')) {
-      try {
-        const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
-          method: 'DELETE',
-        });
-        
-        if (response.ok) {
-          // Refresh the products list
-          fetchProducts();
-          alert('Product deleted successfully!');
-        } else {
-          alert('Failed to delete product');
-        }
-      } catch (error) {
-        console.error('Error deleting product:', error);
-        alert('Failed to delete product');
+      if (response.ok) {
+        fetchOrders();
       }
+    } catch (error) {
+      console.error('Error updating order status:', error);
     }
+  };
+
+  const deleteOrderById = async (orderId: number) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/orders/${orderId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        fetchOrders();
+        setFeedback({
+          isOpen: true,
+          title: 'Deleted',
+          message: 'Order removed successfully!',
+          type: 'success',
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      setFeedback({
+        isOpen: true,
+        title: 'Delete Failed',
+        message: 'Failed to remove order',
+        type: 'error',
+      });
+    }
+  };
+
+  const handleRemoveOrder = (orderId: number) => {
+    setConfirmState({
+      isOpen: true,
+      type: 'delete-order',
+      id: orderId,
+      title: 'Remove Order',
+      message: 'Are you sure you want to remove this order?',
+    });
+  };
+
+  const deleteProductById = async (productId: number) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        // Refresh the products list
+        fetchProducts();
+        setFeedback({
+          isOpen: true,
+          title: 'Deleted',
+          message: 'Product deleted successfully!',
+          type: 'success',
+        });
+      } else {
+        setFeedback({
+          isOpen: true,
+          title: 'Delete Failed',
+          message: 'Failed to delete product',
+          type: 'error',
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      setFeedback({
+        isOpen: true,
+        title: 'Delete Failed',
+        message: 'Failed to delete product',
+        type: 'error',
+      });
+    }
+  };
+
+  const handleDeleteProduct = (productId: number) => {
+    setConfirmState({
+      isOpen: true,
+      type: 'delete-product',
+      id: productId,
+      title: 'Delete Product',
+      message: 'Are you sure you want to delete this product?',
+    });
+  };
+
+  const handleConfirmAction = () => {
+    if (!confirmState.id || !confirmState.type) {
+      return;
+    }
+
+    if (confirmState.type === 'delete-product') {
+      void deleteProductById(confirmState.id);
+    }
+
+    if (confirmState.type === 'delete-order') {
+      void deleteOrderById(confirmState.id);
+    }
+
+    setConfirmState({
+      isOpen: false,
+      type: null,
+      id: null,
+      title: '',
+      message: '',
+    });
   };
 
   const handleEditProduct = (product: Product) => {
@@ -153,7 +268,12 @@ const AdminDashboard = () => {
       });
       
       if (response.ok) {
-        alert('Product updated successfully!');
+        setFeedback({
+          isOpen: true,
+          title: 'Updated',
+          message: 'Product updated successfully!',
+          type: 'success',
+        });
         setFormData({
           name: '',
           price: 0,
@@ -170,11 +290,21 @@ const AdminDashboard = () => {
         // Refresh products list
         fetchProducts();
       } else {
-        alert('Failed to update product');
+        setFeedback({
+          isOpen: true,
+          title: 'Update Failed',
+          message: 'Failed to update product',
+          type: 'error',
+        });
       }
     } catch (error) {
       console.error('Error updating product:', error);
-      alert('Failed to update product');
+      setFeedback({
+        isOpen: true,
+        title: 'Update Failed',
+        message: 'Failed to update product',
+        type: 'error',
+      });
     }
   };
 
@@ -201,7 +331,12 @@ const AdminDashboard = () => {
       });
       
       if (response.ok) {
-        alert('Product added successfully!');
+        setFeedback({
+          isOpen: true,
+          title: 'Added',
+          message: 'Product added successfully!',
+          type: 'success',
+        });
         setFormData({
           name: '',
           price: 0,
@@ -219,7 +354,12 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error('Error adding product:', error);
-      alert('Failed to add product');
+      setFeedback({
+        isOpen: true,
+        title: 'Add Failed',
+        message: 'Failed to add product',
+        type: 'error',
+      });
     }
   };
 
@@ -610,15 +750,17 @@ const AdminDashboard = () => {
                   {orders.map((order) => (
                     <tr key={order.id} className="border-b border-zinc-800">
                       <td className="px-6 py-4 text-sm">{order.id}</td>
-                      <td className="px-6 py-4 text-sm">{order.customer}</td>
+                      <td className="px-6 py-4 text-sm">{order.customerName}</td>
                       <td className="px-6 py-4 text-sm">
                         <div className="text-xs">
-                          <div>{order.email}</div>
-                          <div className="text-zinc-500">{order.phone}</div>
+                          <div>{order.phone}</div>
+                          <div className="text-zinc-500">{order.location}</div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm">{order.products}</td>
-                      <td className="px-6 py-4 text-sm">{order.total}</td>
+                      <td className="px-6 py-4 text-sm">
+                        {order.productName} ({order.size}) x{order.quantity}
+                      </td>
+                      <td className="px-6 py-4 text-sm">{Number(order.totalPrice).toFixed(2)} dh</td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-xs ${
                           order.status === 'done' 
@@ -628,7 +770,7 @@ const AdminDashboard = () => {
                           {order.status === 'done' ? 'Done' : 'Pending'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm">{order.date}</td>
+                      <td className="px-6 py-4 text-sm">{new Date(order.createdAt).toLocaleDateString()}</td>
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
                           <button 
@@ -662,6 +804,31 @@ const AdminDashboard = () => {
           </div>
         )}
       </div>
+
+      <FeedbackModal
+        isOpen={feedback.isOpen}
+        title={feedback.title}
+        message={feedback.message}
+        type={feedback.type}
+        onClose={() => setFeedback((prev) => ({ ...prev, isOpen: false }))}
+      />
+
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText="Delete"
+        onCancel={() =>
+          setConfirmState({
+            isOpen: false,
+            type: null,
+            id: null,
+            title: '',
+            message: '',
+          })
+        }
+        onConfirm={handleConfirmAction}
+      />
     </div>
   );
 };

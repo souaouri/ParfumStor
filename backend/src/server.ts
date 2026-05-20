@@ -5,6 +5,9 @@ import path from 'path';
 import type { Request, Response } from 'express';
 import pool from './database/db';
 import productRoutes from './routes/ProductRoutes';
+import orderRoutes from './routes/orderRoutes';
+import authRoutes from './routes/authRoutes';
+import aiRoutes from './routes/aiRoutes';
 
 dotenv.config();
 
@@ -18,6 +21,9 @@ app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Routes
 app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/ai', aiRoutes);
 
 const PORT = process.env.PORT || 5000;
 

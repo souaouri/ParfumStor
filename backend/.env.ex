@@ -1,4 +1,0 @@
-JWT_ACCESS_SECRET=parfumstore_access_secret
-JWT_REFRESH_SECRET=parfumstore_refresh_secret
-DB_PASSWORD="#ParfumStore1337"
-PORT=5000

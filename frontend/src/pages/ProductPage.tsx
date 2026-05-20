@@ -1,9 +1,10 @@
 // ProductPage.tsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Minus, Plus, User, ShoppingCart } from 'lucide-react';
 import Cart from '../dashboard/component/Cart';
 import AuthModal from '../dashboard/component/AuthModal';
+import FeedbackModal from '../dashboard/component/FeedbackModal';
 
 interface Product {
   id: number;
@@ -16,6 +17,16 @@ interface Product {
   stock?: number;
 }
 
+interface CartItem {
+  id: number;
+  name: string;
+  price: string;
+  quantity: number;
+  image: string;
+  size?: string;
+  cartKey?: string;
+}
+
 const ProductPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -24,15 +35,30 @@ const ProductPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [cartItems] = useState([
-    {
-      id: 1,
-      name: "THE MIXED BURGUNDY & WHITE EDITION",
-      price: "180.00 dh",
-      quantity: 1,
-      image: "https://via.placeholder.com/100x120?text=Product"
+  const [isBuyNowOpen, setIsBuyNowOpen] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [location, setLocation] = useState('');
+  const [feedback, setFeedback] = useState<{ isOpen: boolean; title: string; message: string; type: 'success' | 'error' }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'success',
+  });
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    const storedCart = localStorage.getItem('cartItems');
+    if (!storedCart) return [];
+
+    try {
+      return JSON.parse(storedCart);
+    } catch {
+      return [];
     }
-  ]);
+  });
+
+  useEffect(() => {
+    localStorage.setItem('cartItems', JSON.stringify(cartItems));
+  }, [cartItems]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -76,6 +102,128 @@ const ProductPage = () => {
     }
   };
 
+  const handleAddToCart = () => {
+    if (!product) return;
+
+    const cartKey = `${product.id}-${selectedSize}`;
+    const itemPrice = `${getPriceBySize()} dh`;
+    const imageSrc = product.image
+      ? `http://localhost:5000${product.image}`
+      : 'https://via.placeholder.com/100x120?text=Product';
+
+    setCartItems((prevItems) => {
+      const existingItemIndex = prevItems.findIndex((item) => item.cartKey === cartKey);
+
+      if (existingItemIndex !== -1) {
+        return prevItems.map((item, index) =>
+          index === existingItemIndex
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        );
+      }
+
+      return [
+        ...prevItems,
+        {
+          id: product.id,
+          name: product.name,
+          price: itemPrice,
+          quantity,
+          image: imageSrc,
+          size: selectedSize,
+          cartKey,
+        },
+      ];
+    });
+
+    setIsCartOpen(true);
+  };
+
+  const handleIncreaseItem = (targetItem: CartItem) => {
+    setCartItems((prevItems) =>
+      prevItems.map((item) =>
+        item.cartKey === targetItem.cartKey
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      )
+    );
+  };
+
+  const handleDecreaseItem = (targetItem: CartItem) => {
+    setCartItems((prevItems) =>
+      prevItems
+        .map((item) =>
+          item.cartKey === targetItem.cartKey
+            ? { ...item, quantity: item.quantity - 1 }
+            : item
+        )
+        .filter((item) => item.quantity > 0)
+    );
+  };
+
+  const handleRemoveItem = (targetItem: CartItem) => {
+    setCartItems((prevItems) =>
+      prevItems.filter((item) => item.cartKey !== targetItem.cartKey)
+    );
+  };
+
+  const handleCheckoutSuccess = () => {
+    setCartItems([]);
+  };
+
+  const handleBuyNowSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!product) {
+      return;
+    }
+
+    const submitOrder = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            customerName: fullName,
+            phone: phoneNumber,
+            location,
+            productName: product.name,
+            size: selectedSize,
+            quantity,
+            totalPrice: Number(getPriceBySize()) * quantity,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create order');
+        }
+
+        setFeedback({
+          isOpen: true,
+          title: 'Order Submitted',
+          message: 'Your order details were submitted successfully.',
+          type: 'success',
+        });
+        setIsBuyNowOpen(false);
+        setFullName('');
+        setPhoneNumber('');
+        setLocation('');
+      } catch (error) {
+        console.error('Error creating order:', error);
+        setFeedback({
+          isOpen: true,
+          title: 'Submission Failed',
+          message: 'Failed to submit order. Please try again.',
+          type: 'error',
+        });
+      }
+    };
+
+    void submitOrder();
+  };
+
   if (!product) {
     return (
       <div className="bg-black text-white min-h-screen flex items-center justify-center">
@@ -86,7 +234,6 @@ const ProductPage = () => {
 
   const status = product.status?.toLowerCase() || '';
   const isComingSoon = status === 'coming soon';
-  const isSoldOut = status === 'sold out';
   const isAvailable = status === 'available' || (!status && (product.stock === undefined || product.stock > 0));
 
   return (
@@ -116,6 +263,10 @@ const ProductPage = () => {
         isOpen={isCartOpen} 
         onClose={() => setIsCartOpen(false)} 
         cartItems={cartItems} 
+        onIncrease={handleIncreaseItem}
+        onDecrease={handleDecreaseItem}
+        onRemove={handleRemoveItem}
+        onCheckoutSuccess={handleCheckoutSuccess}
       />
 
       {/* Auth Modal */}
@@ -132,13 +283,13 @@ const ProductPage = () => {
             <img
               src={product.image ? `http://localhost:5000${product.image}` : 'https://via.placeholder.com/400x500?text=No+Image'}
               alt={product.name}
-              className="max-h-[500px] object-contain"
+              className="max-h-125 object-contain"
             />
           </div>
 
           {/* Right - Product Details */}
           <div className="p-8 lg:p-12 flex flex-col h-full overflow-y-auto">
-            <div className="flex-grow">
+            <div className="grow">
               {/* Product Name */}
               <h1 className="text-2xl lg:text-3xl font-light tracking-wider uppercase mb-4">
                 {product.name}
@@ -222,11 +373,13 @@ const ProductPage = () => {
               ) : (
                 <div className="flex gap-4 mb-6">
                   <button
+                    onClick={handleAddToCart}
                     className="flex-1 py-4 text-sm tracking-widest uppercase bg-white text-black hover:bg-zinc-200 transition-colors"
                   >
                     Add to Cart
                   </button>
                   <button
+                    onClick={() => setIsBuyNowOpen(true)}
                     className="flex-1 py-4 text-sm tracking-widest uppercase border border-white text-white hover:bg-white hover:text-black transition-colors"
                   >
                     Buy Now
@@ -260,6 +413,73 @@ const ProductPage = () => {
           </div>
         </div>
       </div>
+
+      {isBuyNowOpen && (
+        <div className="fixed inset-0 z-80 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/80" onClick={() => setIsBuyNowOpen(false)} />
+          <div className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl p-6 shadow-2xl">
+            <button
+              onClick={() => setIsBuyNowOpen(false)}
+              className="absolute top-4 right-4 text-zinc-400 hover:text-white"
+            >
+              ×
+            </button>
+
+            <h2 className="text-xl uppercase tracking-wider mb-2">Buy Now</h2>
+            <p className="text-sm text-zinc-400 mb-6">Enter your delivery details to submit the order.</p>
+
+            <form className="space-y-4" onSubmit={handleBuyNowSubmit}>
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-zinc-400 mb-2">Full Name</label>
+                <input
+                  required
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                  className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white outline-none focus:border-white"
+                  placeholder="Your full name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-zinc-400 mb-2">Phone Number</label>
+                <input
+                  required
+                  value={phoneNumber}
+                  onChange={(event) => setPhoneNumber(event.target.value)}
+                  className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white outline-none focus:border-white"
+                  placeholder="Your phone number"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-zinc-400 mb-2">Location</label>
+                <textarea
+                  required
+                  value={location}
+                  onChange={(event) => setLocation(event.target.value)}
+                  className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white outline-none focus:border-white min-h-28 resize-none"
+                  placeholder="Your location"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 rounded-lg bg-white text-black uppercase tracking-widest font-medium hover:bg-zinc-200 transition-colors"
+              >
+                Submit Order
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <FeedbackModal
+        isOpen={feedback.isOpen}
+        title={feedback.title}
+        message={feedback.message}
+        type={feedback.type}
+        onClose={() => setFeedback((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };
