@@ -4,6 +4,7 @@ import { Package, ShoppingBag, Plus, Trash2, Edit, Check, Clock, X } from 'lucid
 import FeedbackModal from './FeedbackModal';
 import ConfirmModal from './ConfirmModal';
 
+
 interface Product {
   id?: number;
   name: string;

@@ -111,7 +111,7 @@ const Cart = ({ isOpen, onClose, cartItems, onIncrease, onDecrease, onRemove, on
       ></div>
       
       {/* Cart Drawer */}
-      <div className="fixed top-0 right-0 h-full w-[90%] sm:w-110 md:w-125 lg:w-135 bg-black border-l border-zinc-800 z-50 transform transition-transform duration-300 ease-out animate-[slideInRight_0.3s_ease-out] flex flex-col shadow-2xl">
+      <div className="fixed top-0 right-0 h-full w-[90%] sm:w-110 md:w-125 lg:w-135 bg-black border-l border-zinc-800 z-50 transform transition-transform duration-300 ease-out animate-[slideInRight_0.3s_ease-out] flex flex-col shadow-2xl bg-white">
         {/* Cart Header */}
         <div className="flex justify-between items-center p-6 border-b border-zinc-800">
           <h2 className="text-sm uppercase tracking-widest">Your Cart ({cartItems.length})</h2>
