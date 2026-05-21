@@ -1,20 +1,28 @@
-import {Pool} from 'pg';
+// ...existing code...
+import { Pool } from 'pg';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 const pool = new Pool({
-    user: 'soulaymanouaourikt',
-    host: 'localhost',
-    database: 'parfumstore',
-    password: process.env.DB_PASSWORD,
-    port: 5432,
+    user: process.env.DB_USER || 'postgres',
+    host: process.env.DB_HOST || 'localhost',
+    database: process.env.DB_DATABASE || 'parfumstore',
+    password: process.env.DB_PASSWORD || undefined,
+    port: Number(process.env.DB_PORT) || 5432,
+    max: Number(process.env.DB_MAX_CONNECTIONS) || 10,
+    idleTimeoutMillis: 30000,
 });
 
-async function initializeDatabase() {
-    try{
-        const connect = await pool.query('SELECT NOW()');
-        console.log('Database connected:', connect.rows[0]);
+// Log unexpected errors from idle clients
+pool.on('error', (err) => {
+    console.error('Unexpected error on idle pg client', err);
+});
+
+export async function initializeDatabase() {
+    try {
+        const now = await pool.query('SELECT NOW()');
+        console.log('Database connected at', now.rows[0].now);
 
         await pool.query(`
             CREATE TABLE IF NOT EXISTS users (
@@ -24,7 +32,8 @@ async function initializeDatabase() {
                 password VARCHAR(255) NOT NULL,
                 photoprofile VARCHAR(255),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )`);
+            )
+        `);
 
         await pool.query(`
             CREATE TABLE IF NOT EXISTS products (
@@ -37,7 +46,8 @@ async function initializeDatabase() {
                 stock INTEGER DEFAULT 0,
                 status VARCHAR(50) DEFAULT 'available',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )`);
+            )
+        `);
 
         await pool.query(`
             CREATE TABLE IF NOT EXISTS orders (
@@ -53,14 +63,8 @@ async function initializeDatabase() {
                 total_price DECIMAL(10, 2) NOT NULL,
                 status VARCHAR(50) DEFAULT 'pending',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )`);
-
-        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255)`);
-        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS phone VARCHAR(50)`);
-        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS location TEXT`);
-        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS product_name VARCHAR(255)`);
-        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS size VARCHAR(50)`);
-        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pending'`);
+            )
+        `);
 
         await pool.query(`
             CREATE TABLE IF NOT EXISTS cart (
@@ -69,15 +73,15 @@ async function initializeDatabase() {
                 product_id INTEGER REFERENCES products(id),
                 quantity INTEGER NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )`);
-        
+            )
+        `);
 
-        console.log('Database tables created successfully');
+        console.log('Database tables ensured');
     } catch (error) {
         console.error('Database initialization error:', error);
+        throw error;
     }
 }
 
-initializeDatabase();
-
 export default pool;
+// ...existing code...

@@ -237,251 +237,250 @@ const ProductPage = () => {
   const isAvailable = status === 'available' || (!status && (product.stock === undefined || product.stock > 0));
 
   return (
-    <div className="bg-black text-white min-h-screen">
-      {/* Navigation */}
-      <nav className="flex justify-between items-center px-8 py-6 uppercase text-[10px] tracking-widest fixed w-full z-50 bg-black/90 backdrop-blur-sm border-b border-zinc-800">
-        <div className="text-red-600 font-bold text-2xl cursor-pointer" onClick={() => navigate('/')}>
+  <div className="bg-[#f5f1e8] text-black min-h-screen overflow-hidden">
+
+    {/* Navigation */}
+    <nav className="fixed top-0 left-0 w-full z-50 bg-[#f5f1e8]/95 backdrop-blur-md border-b border-black/[0.06]">
+
+      <div className="flex justify-between items-center px-8 lg:px-16 py-6">
+
+        <div
+          className="text-black text-[22px] tracking-[0.45em] uppercase cursor-pointer font-light"
+          onClick={() => navigate('/')}
+        >
           Rwi7a
         </div>
-        <div className="flex gap-8">
-          <a href="/" className="hover:opacity-60">Heritage</a>
-          <a href="/" className="hover:opacity-60">Essentials</a>
+
+        <div className="hidden md:flex gap-12 uppercase text-[10px] tracking-[0.35em] text-black/60">
+
+          <a
+            href="/"
+            className="hover:text-black transition-all duration-300"
+          >
+            Heritage
+          </a>
+
+          <a
+            href="/"
+            className="hover:text-black transition-all duration-300"
+          >
+            Essentials
+          </a>
+
         </div>
-        <div className="flex gap-4 items-center">
-          <button onClick={() => setIsAuthOpen(true)} className="hover:opacity-60 cursor-pointer">
-            <User size={18} />
+
+        <div className="flex items-center gap-6">
+
+          <button
+            onClick={() => setIsAuthOpen(true)}
+            className="hover:opacity-60 transition-all duration-300"
+          >
+            <User size={17} strokeWidth={1.2} />
           </button>
-          <button onClick={() => setIsCartOpen(true)} className="hover:opacity-60 cursor-pointer flex items-center gap-2">
-            <ShoppingCart size={18} />
-            <span>({cartItems.length})</span>
+
+          <button
+            onClick={() => setIsCartOpen(true)}
+            className="flex items-center gap-2 hover:opacity-60 transition-all duration-300"
+          >
+            <ShoppingCart size={17} strokeWidth={1.2} />
+
+            <span className="text-[10px] tracking-[0.3em]">
+              ({cartItems.length})
+            </span>
           </button>
+
         </div>
-      </nav>
+      </div>
+    </nav>
 
-      {/* Cart Sidebar */}
-      <Cart 
-        isOpen={isCartOpen} 
-        onClose={() => setIsCartOpen(false)} 
-        cartItems={cartItems} 
-        onIncrease={handleIncreaseItem}
-        onDecrease={handleDecreaseItem}
-        onRemove={handleRemoveItem}
-        onCheckoutSuccess={handleCheckoutSuccess}
-      />
+    {/* Cart Sidebar */}
+    <Cart
+      isOpen={isCartOpen}
+      onClose={() => setIsCartOpen(false)}
+      cartItems={cartItems}
+      onIncrease={handleIncreaseItem}
+      onDecrease={handleDecreaseItem}
+      onRemove={handleRemoveItem}
+      onCheckoutSuccess={handleCheckoutSuccess}
+    />
 
-      {/* Auth Modal */}
-      <AuthModal 
-        isOpen={isAuthOpen} 
-        onClose={() => setIsAuthOpen(false)} 
-      />
+    {/* Auth Modal */}
+    <AuthModal
+      isOpen={isAuthOpen}
+      onClose={() => setIsAuthOpen(false)}
+    />
 
-      {/* Product Detail */}
-      <div className="pt-20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 h-screen">
-          {/* Left - Product Image */}
-          <div className="relative bg-black border-b lg:border-b-0 lg:border-r border-zinc-800 p-8 lg:p-12 flex items-center justify-center h-full">
+    {/* Product Detail */}
+    <div className="pt-24">
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen">
+
+        {/* Left Image */}
+        <div className="border-b lg:border-b-0 lg:border-r border-black/[0.06] bg-[#efe9dc] flex items-center justify-center px-10 lg:px-24 py-20">
+
+          <div className="overflow-hidden">
             <img
-              src={product.image ? `http://localhost:5000${product.image}` : 'https://via.placeholder.com/400x500?text=No+Image'}
+              src={
+                product.image
+                  ? `http://localhost:5000${product.image}`
+                  : 'https://via.placeholder.com/400x500?text=No+Image'
+              }
               alt={product.name}
-              className="max-h-125 object-contain"
+              className="max-h-[82vh] object-contain transition duration-700 hover:scale-[1.03]"
             />
           </div>
 
-          {/* Right - Product Details */}
-          <div className="p-8 lg:p-12 flex flex-col h-full overflow-y-auto">
-            <div className="grow">
-              {/* Product Name */}
-              <h1 className="text-2xl lg:text-3xl font-light tracking-wider uppercase mb-4">
-                {product.name}
-              </h1>
+        </div>
 
-              {/* Price */}
-              <div className="text-xl mb-8">
-                <span className="text-zinc-300">{getPriceBySize()} dh</span>
-              </div>
+        {/* Right Content */}
+        <div className="bg-[#f5f1e8] px-8 lg:px-24 py-20 flex items-center">
 
-              {/* Size Selection */}
-              <div className="mb-6">
-                <h3 className="text-sm tracking-wider uppercase mb-3 text-zinc-400">
-                  Size
-                </h3>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setSelectedSize('5ml')}
-                    className={`px-6 py-3 border transition-all duration-200 ${
-                      selectedSize === '5ml'
-                        ? 'border-white bg-white text-black'
-                        : 'border-zinc-700 hover:border-zinc-500'
-                    }`}
-                  >
-                    5ml
-                  </button>
-                  <button
-                    onClick={() => setSelectedSize('10ml')}
-                    className={`px-6 py-3 border transition-all duration-200 ${
-                      selectedSize === '10ml'
-                        ? 'border-white bg-white text-black'
-                        : 'border-zinc-700 hover:border-zinc-500'
-                    }`}
-                  >
-                    10ml
-                  </button>
-                  <button
-                    onClick={() => setSelectedSize('full')}
-                    className={`px-6 py-3 border transition-all duration-200 ${
-                      selectedSize === 'full'
-                        ? 'border-white bg-white text-black'
-                        : 'border-zinc-700 hover:border-zinc-500'
-                    }`}
-                  >
-                    Full Bottle
-                  </button>
-                </div>
-              </div>
+          <div className="max-w-xl w-full">
 
-              {/* Quantity */}
-              <div className="mb-8">
-                <h3 className="text-sm tracking-wider uppercase mb-3 text-zinc-400">
-                  Quantity
-                </h3>
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => handleQuantityChange('decrease')}
-                    disabled={quantity <= 1}
-                    className="w-12 h-12 border border-zinc-700 hover:border-zinc-500 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
-                  >
-                    <Minus size={16} />
-                  </button>
-                  <span className="text-xl w-12 text-center">{quantity}</span>
-                  <button
-                    onClick={() => handleQuantityChange('increase')}
-                    className="w-12 h-12 border border-zinc-700 hover:border-zinc-500 flex items-center justify-center transition-colors"
-                  >
-                    <Plus size={16} />
-                  </button>
-                </div>
-              </div>
+            {/* Collection */}
+            <p className="uppercase text-[10px] tracking-[0.4em] text-black/40 mb-6">
+              Private Blend Collection
+            </p>
 
-              {/* Buttons */}
-              {!isAvailable ? (
+            {/* Product Name */}
+            <h1 className="uppercase text-[42px] lg:text-[64px] leading-[0.95] tracking-[0.14em] font-light mb-10">
+              {product.name}
+            </h1>
+
+            {/* Price */}
+            <div className="mb-14">
+              <span className="text-[28px] font-light tracking-wide">
+                {getPriceBySize()} dh
+              </span>
+            </div>
+
+            {/* Size */}
+            <div className="mb-14">
+
+              <h3 className="uppercase text-[10px] tracking-[0.35em] text-black/40 mb-5">
+                Size
+              </h3>
+
+              <div className="flex flex-wrap gap-3">
+
                 <button
-                  disabled
-                  className="w-full py-4 mb-6 text-sm tracking-widest uppercase bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                  onClick={() => setSelectedSize('5ml')}
+                  className={`px-7 py-3 border uppercase text-[10px] tracking-[0.3em] transition-all duration-300 ${
+                    selectedSize === '5ml'
+                      ? 'bg-black text-white border-black'
+                      : 'border-black/[0.08] hover:border-black'
+                  }`}
                 >
-                  {isComingSoon ? 'Coming Soon' : 'Sold Out'}
+                  5ml
                 </button>
-              ) : (
-                <div className="flex gap-4 mb-6">
-                  <button
-                    onClick={handleAddToCart}
-                    className="flex-1 py-4 text-sm tracking-widest uppercase bg-white text-black hover:bg-zinc-200 transition-colors"
-                  >
-                    Add to Cart
-                  </button>
-                  <button
-                    onClick={() => setIsBuyNowOpen(true)}
-                    className="flex-1 py-4 text-sm tracking-widest uppercase border border-white text-white hover:bg-white hover:text-black transition-colors"
-                  >
-                    Buy Now
-                  </button>
-                </div>
-              )}
 
-              {/* Description */}
-              {product.description && (
-                <div className="border-t border-zinc-800 pt-6">
-                  <button className="w-full flex items-center justify-between text-sm tracking-wider uppercase mb-3 text-zinc-400">
-                    <span>Description</span>
-                    <span>▲</span>
-                  </button>
-                  <div className="text-sm leading-relaxed text-zinc-400 space-y-3">
-                    {product.description.split('\n').map((paragraph, index) => (
-                      <p key={index}>{paragraph}</p>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Shipping Policy */}
-              <div className="border-t border-zinc-800 pt-6 mt-6">
-                <button className="w-full flex items-center justify-between text-sm tracking-wider uppercase text-zinc-400">
-                  <span>Shipping Policy</span>
-                  <span>▼</span>
+                <button
+                  onClick={() => setSelectedSize('10ml')}
+                  className={`px-7 py-3 border uppercase text-[10px] tracking-[0.3em] transition-all duration-300 ${
+                    selectedSize === '10ml'
+                      ? 'bg-black text-white border-black'
+                      : 'border-black/[0.08] hover:border-black'
+                  }`}
+                >
+                  10ml
                 </button>
+
+                <button
+                  onClick={() => setSelectedSize('full')}
+                  className={`px-7 py-3 border uppercase text-[10px] tracking-[0.3em] transition-all duration-300 ${
+                    selectedSize === 'full'
+                      ? 'bg-black text-white border-black'
+                      : 'border-black/[0.08] hover:border-black'
+                  }`}
+                >
+                  Full Bottle
+                </button>
+
               </div>
             </div>
+
+            {/* Quantity */}
+            <div className="mb-14">
+
+              <h3 className="uppercase text-[10px] tracking-[0.35em] text-black/40 mb-5">
+                Quantity
+              </h3>
+
+              <div className="flex items-center gap-5">
+
+                <button
+                  onClick={() => handleQuantityChange('decrease')}
+                  disabled={quantity <= 1}
+                  className="w-12 h-12 border border-black/[0.08] flex items-center justify-center hover:border-black transition-all duration-300 disabled:opacity-30"
+                >
+                  <Minus size={14} strokeWidth={1.2} />
+                </button>
+
+                <span className="text-lg w-8 text-center">
+                  {quantity}
+                </span>
+
+                <button
+                  onClick={() => handleQuantityChange('increase')}
+                  className="w-12 h-12 border border-black/[0.08] flex items-center justify-center hover:border-black transition-all duration-300"
+                >
+                  <Plus size={14} strokeWidth={1.2} />
+                </button>
+
+              </div>
+            </div>
+
+            {/* Buttons */}
+            {!isAvailable ? (
+              <button
+                disabled
+                className="w-full py-5 uppercase tracking-[0.35em] text-[10px] bg-black/5 text-black/40"
+              >
+                {isComingSoon ? 'Coming Soon' : 'Sold Out'}
+              </button>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-4 mb-16">
+
+                <button
+                  onClick={handleAddToCart}
+                  className="flex-1 py-5 bg-black text-white uppercase text-[10px] tracking-[0.35em] hover:opacity-90 transition-all duration-300"
+                >
+                  Add to Cart
+                </button>
+
+                <button
+                  onClick={() => setIsBuyNowOpen(true)}
+                  className="flex-1 py-5 border border-black uppercase text-[10px] tracking-[0.35em] hover:bg-black hover:text-white transition-all duration-300"
+                >
+                  Buy Now
+                </button>
+
+              </div>
+            )}
+
+            {/* Description */}
+            {product.description && (
+              <div className="border-t border-black/[0.06] pt-10">
+
+                <button className="w-full flex items-center justify-between uppercase text-[10px] tracking-[0.35em] mb-6">
+                  <span>Description</span>
+                  <span>—</span>
+                </button>
+
+                <div className="space-y-5 text-[14px] leading-8 text-black/60">
+                  {product.description.split('\n').map((paragraph, index) => (
+                    <p key={index}>{paragraph}</p>
+                  ))}
+                </div>
+
+              </div>
+            )}
+
           </div>
         </div>
       </div>
-
-      {isBuyNowOpen && (
-        <div className="fixed inset-0 z-80 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/80" onClick={() => setIsBuyNowOpen(false)} />
-          <div className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl p-6 shadow-2xl">
-            <button
-              onClick={() => setIsBuyNowOpen(false)}
-              className="absolute top-4 right-4 text-zinc-400 hover:text-white"
-            >
-              ×
-            </button>
-
-            <h2 className="text-xl uppercase tracking-wider mb-2">Buy Now</h2>
-            <p className="text-sm text-zinc-400 mb-6">Enter your delivery details to submit the order.</p>
-
-            <form className="space-y-4" onSubmit={handleBuyNowSubmit}>
-              <div>
-                <label className="block text-xs uppercase tracking-widest text-zinc-400 mb-2">Full Name</label>
-                <input
-                  required
-                  value={fullName}
-                  onChange={(event) => setFullName(event.target.value)}
-                  className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white outline-none focus:border-white"
-                  placeholder="Your full name"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs uppercase tracking-widest text-zinc-400 mb-2">Phone Number</label>
-                <input
-                  required
-                  value={phoneNumber}
-                  onChange={(event) => setPhoneNumber(event.target.value)}
-                  className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white outline-none focus:border-white"
-                  placeholder="Your phone number"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs uppercase tracking-widest text-zinc-400 mb-2">Location</label>
-                <textarea
-                  required
-                  value={location}
-                  onChange={(event) => setLocation(event.target.value)}
-                  className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white outline-none focus:border-white min-h-28 resize-none"
-                  placeholder="Your location"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3 rounded-lg bg-white text-black uppercase tracking-widest font-medium hover:bg-zinc-200 transition-colors"
-              >
-                Submit Order
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      <FeedbackModal
-        isOpen={feedback.isOpen}
-        title={feedback.title}
-        message={feedback.message}
-        type={feedback.type}
-        onClose={() => setFeedback((prev) => ({ ...prev, isOpen: false }))}
-      />
     </div>
-  );
-};
-
+  </div>
+);
+}
 export default ProductPage;
