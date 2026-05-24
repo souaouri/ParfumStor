@@ -6,7 +6,6 @@ import AuthModal from "./AuthModal";
 import Navbar from "./Navbar.tsx";
 import Cart from "./Cart.tsx";
 
-
 interface Product {
   id: number;
   name: string;
@@ -28,6 +27,32 @@ interface CartItem {
   cartKey?: string;
 }
 
+// Hero slides data for MEN carousel
+const menSlides = [
+  {
+    image: 'url("public/men.png")',
+    subtitle: "Men Collection",
+    title: "Bold Identity",
+    cta: "Shop Men",
+  },
+  {
+    image: 'url("public/section.png")',
+    subtitle: "Men Collection",
+    title: "Modern Elegance",
+    cta: "Shop Men",
+  },
+];
+
+// Hero slides data for WOMEN carousel
+const womenSlides = [
+  {
+    image: 'url("public/women.png")',
+    subtitle: "Women Collection",
+    title: "Timeless Elegance",
+    cta: "Shop Women",
+  },
+];
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -43,6 +68,30 @@ const Dashboard = () => {
       return [];
     }
   });
+
+  // Carousel states
+  const [menIndex, setMenIndex] = useState(0);
+  const [womenIndex, setWomenIndex] = useState(0);
+  const [isMenHovering, setIsMenHovering] = useState(false);
+  const [isWomenHovering, setIsWomenHovering] = useState(false);
+
+  // Auto-rotate MEN carousel every 5 seconds (right to left)
+  useEffect(() => {
+    if (isMenHovering) return;
+    const interval = setInterval(() => {
+      setMenIndex((prev) => (prev + 1) % menSlides.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isMenHovering]);
+
+  // Auto-rotate WOMEN carousel every 5 seconds (right to left)
+  useEffect(() => {
+    if (isWomenHovering) return;
+    const interval = setInterval(() => {
+      setWomenIndex((prev) => (prev + 1) % womenSlides.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isWomenHovering]);
 
   // Fetch products from API
   useEffect(() => {
@@ -70,6 +119,9 @@ const Dashboard = () => {
     localStorage.setItem("cartItems", JSON.stringify([]));
   };
 
+  const currentMenSlide = menSlides[menIndex];
+  const currentWomenSlide = womenSlides[womenIndex];
+
   return (
     <div className="bg-black text-white min-h-screen font-sans">
       {/* Navigation */}
@@ -79,14 +131,19 @@ const Dashboard = () => {
         cartItems={cartItems}
       />
       {/* Hero Section */}
-      <section className="relative  mt-[88px] overflow-hidden bg-white h-[120vh]">
+      <section className="relative mt-[88px] overflow-hidden bg-white h-[120vh]">
         <div className="grid grid-rows-2">
-          {/* MEN */}
-          <div className="relative group overflow-hidden h-[60vh]">
+          {/* MEN CAROUSEL - No buttons, just auto-rotate */}
+          <div
+            className="relative group overflow-hidden h-[60vh]"
+            onMouseEnter={() => setIsMenHovering(true)}
+            onMouseLeave={() => setIsMenHovering(false)}
+          >
             <div
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-[2500ms] group-hover:scale-105"
+              className="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out"
               style={{
-                backgroundImage: 'url("public/men.png")',
+                backgroundImage: currentMenSlide.image,
+                transition: "background-image 500ms ease-in-out",
               }}
             />
 
@@ -95,26 +152,31 @@ const Dashboard = () => {
             <div className="relative z-10 h-full flex items-center justify-center text-center">
               <div>
                 <p className="uppercase tracking-[0.4em] text-[10px] text-white/70 mb-5">
-                  Men Collection
+                  {currentMenSlide.subtitle}
                 </p>
 
                 <h1 className="text-white text-4xl md:text-6xl font-light uppercase leading-[0.95] mb-8">
-                  Bold Identity
+                  {currentMenSlide.title}
                 </h1>
 
                 <button className="border border-white text-white px-10 py-3 text-[11px] uppercase tracking-[0.28em] hover:bg-white hover:text-black transition-all duration-500">
-                  Shop Men
+                  {currentMenSlide.cta}
                 </button>
               </div>
             </div>
           </div>
 
-          {/* WOMEN */}
-          <div className="relative group overflow-hidden h-[60vh]">
+          {/* WOMEN CAROUSEL - No buttons, just auto-rotate */}
+          <div
+            className="relative group overflow-hidden h-[60vh]"
+            onMouseEnter={() => setIsWomenHovering(true)}
+            onMouseLeave={() => setIsWomenHovering(false)}
+          >
             <div
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-[2500ms] group-hover:scale-105"
+              className="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out"
               style={{
-                backgroundImage: 'url("public/women.png")',
+                backgroundImage: currentWomenSlide.image,
+                transition: "background-image 500ms ease-in-out",
               }}
             />
 
@@ -123,15 +185,15 @@ const Dashboard = () => {
             <div className="relative z-10 h-full flex items-center justify-center text-center">
               <div>
                 <p className="uppercase tracking-[0.4em] text-[10px] text-white/70 mb-5">
-                  Women Collection
+                  {currentWomenSlide.subtitle}
                 </p>
 
                 <h1 className="text-white text-4xl md:text-6xl font-light uppercase leading-[0.95] mb-8">
-                  Timeless Elegance
+                  {currentWomenSlide.title}
                 </h1>
 
                 <button className="border border-white text-white px-10 py-3 text-[11px] uppercase tracking-[0.28em] hover:bg-white hover:text-black transition-all duration-500">
-                  Shop Women
+                  {currentWomenSlide.cta}
                 </button>
               </div>
             </div>
@@ -143,6 +205,7 @@ const Dashboard = () => {
       <div className="py-5 border-b border-zinc-200 text-center text-[10px] uppercase tracking-[0.45em] text-zinc-500">
         Discover The Collections
       </div>
+
       {/* Brand Logos Marquee */}
       <div className="overflow-hidden bg-[#faf8f4] border-y border-zinc-200 py-10">
         <div className="flex whitespace-nowrap animate-[marquee_35s_linear_infinite]">
@@ -209,9 +272,11 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
       <div className="mt-8 text-center text-zinc-500 text-[11px] uppercase tracking-[0.25em] h-[50px]">
         discover our collections and find your signature scent.
       </div>
+
       {/* Product Grid */}
       <div className="bg-white px-6 md:px-10 lg:px-16 py-14">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
@@ -297,7 +362,6 @@ const Dashboard = () => {
         </div>
 
         {/* Right Side - Text & Content */}
-        {/* Right Side - Text & Content */}
         <div className="flex items-center justify-center bg-white px-6 md:px-10 lg:px-16 py-16 lg:py-0">
           <div className="max-w-md w-full">
             {/* Badge */}
@@ -353,6 +417,7 @@ const Dashboard = () => {
           </div>
         </div>
       </section>
+
       {/* Footer */}
       <footer className="bg-black text-white/70 border-t border-white/10">
         {/* Main Footer Content */}
