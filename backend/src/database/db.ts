@@ -1,30 +1,28 @@
 // ...existing code...
-import { Pool } from 'pg';
-import dotenv from 'dotenv';
+import { Pool } from "pg";
+import dotenv from "dotenv";
 
 dotenv.config();
 
 const pool = new Pool({
-    user: process.env.DB_USER || 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_DATABASE || 'parfumstore',
-    password: process.env.DB_PASSWORD || undefined,
-    port: Number(process.env.DB_PORT) || 5432,
-    max: Number(process.env.DB_MAX_CONNECTIONS) || 10,
-    idleTimeoutMillis: 30000,
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
 });
 
 // Log unexpected errors from idle clients
-pool.on('error', (err) => {
-    console.error('Unexpected error on idle pg client', err);
+pool.on("error", (err) => {
+  console.error("Unexpected error on idle pg client", err);
 });
 
 export async function initializeDatabase() {
-    try {
-        const now = await pool.query('SELECT NOW()');
-        console.log('Database connected at', now.rows[0].now);
+  try {
+    const now = await pool.query("SELECT NOW()");
+    console.log("Database connected at", now.rows[0].now);
 
-        await pool.query(`
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(255) UNIQUE NOT NULL,
@@ -35,7 +33,7 @@ export async function initializeDatabase() {
             )
         `);
 
-        await pool.query(`
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS products (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
@@ -49,7 +47,7 @@ export async function initializeDatabase() {
             )
         `);
 
-        await pool.query(`
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS orders (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER REFERENCES users(id),
@@ -66,7 +64,7 @@ export async function initializeDatabase() {
             )
         `);
 
-        await pool.query(`
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS cart (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER REFERENCES users(id),
@@ -76,11 +74,11 @@ export async function initializeDatabase() {
             )
         `);
 
-        console.log('Database tables ensured');
-    } catch (error) {
-        console.error('Database initialization error:', error);
-        throw error;
-    }
+    console.log("Database tables ensured");
+  } catch (error) {
+    console.error("Database initialization error:", error);
+    throw error;
+  }
 }
 
 export default pool;

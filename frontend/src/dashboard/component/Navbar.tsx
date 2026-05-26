@@ -26,7 +26,7 @@ const Navbar = ({
       {/* Navigation Links */}
       <div className="flex gap-8">
         <a
-          href="#"
+          href="/"
           className="hover:opacity-60 transition-opacity duration-300"
         >
           Heritage

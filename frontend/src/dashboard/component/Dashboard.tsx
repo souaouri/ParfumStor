@@ -3,8 +3,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, ShoppingCart } from "lucide-react";
 import AuthModal from "./AuthModal";
-import Navbar from "./Navbar.tsx";
 import Cart from "./Cart.tsx";
+
+import Navbar from "./Navbar.tsx";
 
 interface Product {
   id: number;
@@ -129,6 +130,15 @@ const Dashboard = () => {
         setIsAuthOpen={setIsAuthOpen}
         setIsCartOpen={setIsCartOpen}
         cartItems={cartItems}
+      />
+
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+
+      <Cart
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        cartItems={cartItems}
+        onCheckoutSuccess={handleCheckoutSuccess}
       />
       {/* Hero Section */}
       <section className="relative mt-[88px] overflow-hidden bg-white h-[120vh]">
@@ -354,7 +364,7 @@ const Dashboard = () => {
           <div
             className="absolute inset-0 bg-cover bg-center transition-transform duration-[2500ms] group-hover:scale-105"
             style={{
-              backgroundImage: 'url("/bottle.png")',
+              backgroundImage: 'url("/bott.jpg")',
             }}
           />
           {/* Optional subtle gradient overlay for depth */}
