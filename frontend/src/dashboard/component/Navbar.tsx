@@ -23,7 +23,7 @@ const Navbar = ({
         />
       </div>
 
-      {/* Navigation Links */}
+      {/* Navigation links */}
       <div className="flex gap-8">
         <a
           href="/"
@@ -38,7 +38,6 @@ const Navbar = ({
           Essentials
         </a>
       </div>
-
       {/* Icons */}
       <div className="flex items-center gap-6">
         <button
