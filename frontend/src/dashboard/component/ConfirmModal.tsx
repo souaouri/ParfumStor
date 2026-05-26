@@ -42,7 +42,6 @@ const ConfirmModal = ({
         >
           <X size={18} />
         </button>
-
         {/* Decorative icon (optional - perfume bottle silhouette) */}
         <div className="flex justify-center mb-5">
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#f0e7d8] to-[#e8ddcd] flex items-center justify-center">
@@ -74,7 +73,6 @@ const ConfirmModal = ({
           <div className="w-1 h-1 rounded-full bg-[#d4c4a8]" />
           <div className="w-8 h-px bg-gradient-to-l from-transparent to-[#d4c4a8]" />
         </div>
-
         {/* Message */}
         <p className="text-center text-sm text-stone-600 leading-relaxed mb-8 font-light tracking-wide">
           {message}
