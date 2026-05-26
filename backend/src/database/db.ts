@@ -1,22 +1,28 @@
-import {Pool} from 'pg';
-import dotenv from 'dotenv';
+// ...existing code...
+import { Pool } from "pg";
+import dotenv from "dotenv";
 
 dotenv.config();
 
 const pool = new Pool({
-    user: 'soulaymanouaourikt',
-    host: 'localhost',
-    database: 'parfumstore',
-    password: process.env.DB_PASSWORD,
-    port: 5432,
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
 });
 
-async function initializeDatabase() {
-    try{
-        const connect = await pool.query('SELECT NOW()');
-        console.log('Database connected:', connect.rows[0]);
+// Log unexpected errors from idle clients
+pool.on("error", (err) => {
+  console.error("Unexpected error on idle pg client", err);
+});
 
-        await pool.query(`
+export async function initializeDatabase() {
+  try {
+    const now = await pool.query("SELECT NOW()");
+    console.log("Database connected at", now.rows[0].now);
+
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
                 username VARCHAR(255) UNIQUE NOT NULL,
@@ -24,9 +30,10 @@ async function initializeDatabase() {
                 password VARCHAR(255) NOT NULL,
                 photoprofile VARCHAR(255),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )`);
+            )
+        `);
 
-        await pool.query(`
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS products (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
@@ -37,9 +44,10 @@ async function initializeDatabase() {
                 stock INTEGER DEFAULT 0,
                 status VARCHAR(50) DEFAULT 'available',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )`);
+            )
+        `);
 
-        await pool.query(`
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS orders (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER REFERENCES users(id),
@@ -53,31 +61,25 @@ async function initializeDatabase() {
                 total_price DECIMAL(10, 2) NOT NULL,
                 status VARCHAR(50) DEFAULT 'pending',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )`);
+            )
+        `);
 
-        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255)`);
-        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS phone VARCHAR(50)`);
-        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS location TEXT`);
-        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS product_name VARCHAR(255)`);
-        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS size VARCHAR(50)`);
-        await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'pending'`);
-
-        await pool.query(`
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS cart (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER REFERENCES users(id),
                 product_id INTEGER REFERENCES products(id),
                 quantity INTEGER NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )`);
-        
+            )
+        `);
 
-        console.log('Database tables created successfully');
-    } catch (error) {
-        console.error('Database initialization error:', error);
-    }
+    console.log("Database tables ensured");
+  } catch (error) {
+    console.error("Database initialization error:", error);
+    throw error;
+  }
 }
 
-initializeDatabase();
-
 export default pool;
+// ...existing code...

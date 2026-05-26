@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import type { Request, Response } from 'express';
-import pool from './database/db';
+import pool, { initializeDatabase } from './database/db';
 import productRoutes from './routes/ProductRoutes';
 import orderRoutes from './routes/orderRoutes';
 import authRoutes from './routes/authRoutes';
@@ -26,7 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/ai', aiRoutes);
 
 const PORT = process.env.PORT || 5000;
-
+initializeDatabase();
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
