@@ -1,12 +1,16 @@
 // ProductDetail.tsx
-import { useState, type FC, type FormEvent } from 'react';
-import { X, Minus, Plus } from 'lucide-react';
-import FeedbackModal from './FeedbackModal';
+import { useState, type FC, type FormEvent } from "react";
+import { X, Minus, Plus } from "lucide-react";
+import FeedbackModal from "./FeedbackModal";
 
 interface Product {
   id: number;
   name: string;
-  price: number;
+  full_bottle_price: number; // Changed
+  price_5ml: number; // New
+  price_10ml: number; // New
+  category: string; // New
+  sex: string; // New
   status?: string;
   image?: string;
   image2?: string;
@@ -20,52 +24,90 @@ interface ProductDetailProps {
   onClose: () => void;
 }
 
-const ProductDetail: FC<ProductDetailProps> = ({ product, isOpen, onClose }) => {
-  const [selectedSize, setSelectedSize] = useState<'5ml' | '10ml' | 'full'>('full');
+const ProductDetail: FC<ProductDetailProps> = ({
+  product,
+  isOpen,
+  onClose,
+}) => {
+  const [selectedSize, setSelectedSize] = useState<"5ml" | "10ml" | "full">(
+    "full",
+  );
   const [quantity, setQuantity] = useState(1);
   const [isBuyNowOpen, setIsBuyNowOpen] = useState(false);
-  const [fullName, setFullName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [location, setLocation] = useState('');
-  const [feedback, setFeedback] = useState<{ isOpen: boolean; title: string; message: string; type: 'success' | 'error' }>({
+  const [fullName, setFullName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [location, setLocation] = useState("");
+  const [feedback, setFeedback] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "success" | "error";
+  }>({
     isOpen: false,
-    title: '',
-    message: '',
-    type: 'success',
+    title: "",
+    message: "",
+    type: "success",
   });
 
-  // Calculate price based on size
+  // Calculate price based on size using actual database prices
   const getPriceBySize = () => {
-    const basePrice = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
     switch (selectedSize) {
-      case '5ml':
-        return (basePrice * 0.3).toFixed(2);
-      case '10ml':
-        return (basePrice * 0.5).toFixed(2);
-      case 'full':
-        return basePrice.toFixed(2);
+      case "5ml":
+        return product.price_5ml > 0
+          ? product.price_5ml.toFixed(2)
+          : (product.full_bottle_price * 0.3).toFixed(2);
+      case "10ml":
+        return product.price_10ml > 0
+          ? product.price_10ml.toFixed(2)
+          : (product.full_bottle_price * 0.5).toFixed(2);
+      case "full":
+        return product.full_bottle_price.toFixed(2);
       default:
-        return basePrice.toFixed(2);
+        return product.full_bottle_price.toFixed(2);
     }
   };
 
-  const handleQuantityChange = (action: 'increase' | 'decrease') => {
-    if (action === 'increase') {
-      setQuantity(prev => prev + 1);
-    } else if (action === 'decrease' && quantity > 1) {
-      setQuantity(prev => prev - 1);
+  // Check if selected size is available
+  const isSizeAvailable = () => {
+    switch (selectedSize) {
+      case "5ml":
+        return product.price_5ml > 0;
+      case "10ml":
+        return product.price_10ml > 0;
+      case "full":
+        return product.full_bottle_price > 0;
+      default:
+        return true;
+    }
+  };
+
+  const handleQuantityChange = (action: "increase" | "decrease") => {
+    if (action === "increase") {
+      setQuantity((prev) => prev + 1);
+    } else if (action === "decrease" && quantity > 1) {
+      setQuantity((prev) => prev - 1);
     }
   };
 
   const handleBuyNowSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (!isSizeAvailable()) {
+      setFeedback({
+        isOpen: true,
+        title: "Size Not Available",
+        message: `${selectedSize} size is not available for this product.`,
+        type: "error",
+      });
+      return;
+    }
+
     const submitOrder = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/orders', {
-          method: 'POST',
+        const response = await fetch("http://localhost:5000/api/orders", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             customerName: fullName,
@@ -79,26 +121,28 @@ const ProductDetail: FC<ProductDetailProps> = ({ product, isOpen, onClose }) => 
         });
 
         if (!response.ok) {
-          throw new Error('Failed to create order');
+          throw new Error("Failed to create order");
         }
 
         setFeedback({
           isOpen: true,
-          title: 'Order Submitted',
-          message: 'Your order details were submitted successfully.',
-          type: 'success',
+          title: "Order Submitted",
+          message: "Your order details were submitted successfully.",
+          type: "success",
         });
         setIsBuyNowOpen(false);
-        setFullName('');
-        setPhoneNumber('');
-        setLocation('');
+        setFullName("");
+        setPhoneNumber("");
+        setLocation("");
+        setQuantity(1);
+        setSelectedSize("full");
       } catch (error) {
-        console.error('Error creating order:', error);
+        console.error("Error creating order:", error);
         setFeedback({
           isOpen: true,
-          title: 'Submission Failed',
-          message: 'Failed to submit order. Please try again.',
-          type: 'error',
+          title: "Submission Failed",
+          message: "Failed to submit order. Please try again.",
+          type: "error",
         });
       }
     };
@@ -107,27 +151,40 @@ const ProductDetail: FC<ProductDetailProps> = ({ product, isOpen, onClose }) => 
   };
 
   // Check product availability status
-  const status = product.status?.toLowerCase() || '';
-  
-  // Debug log
-  console.log('Product:', product.name, 'Status:', status, 'Stock:', product.stock);
-  
-  const isComingSoon = status === 'coming soon';
-  const isAvailable = status === 'available' || (!status && (product.stock === undefined || product.stock > 0));
+  const status = product.status?.toLowerCase() || "";
+  const isComingSoon = status === "coming_soon";
+  const isOutOfStock = status === "out_of_stock";
+  const isAvailable =
+    status === "available" &&
+    (product.stock === undefined || product.stock > 0);
+
+  // Get collection display text
+  const getCollectionText = () => {
+    const sexMap: { [key: string]: string } = {
+      men: "Men's Collection",
+      women: "Women's Collection",
+      unisex: "Unisex Collection",
+    };
+    const categoryMap: { [key: string]: string } = {
+      original: "Original",
+      copy: "Inspired by",
+    };
+    return `${sexMap[product.sex] || "Collection"} • ${categoryMap[product.category] || "Premium"}`;
+  };
 
   if (!isOpen) return null;
 
   return (
     <>
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-black z-60 animate-fadeIn"
         onClick={onClose}
       />
-      
+
       {/* Product Detail Modal */}
       <div className="fixed inset-0 z-70 flex items-center justify-center pointer-events-none">
-        <div 
+        <div
           className="bg-black w-full h-full overflow-y-auto pointer-events-auto animate-scaleIn"
           onClick={(e) => e.stopPropagation()}
         >
@@ -141,7 +198,11 @@ const ProductDetail: FC<ProductDetailProps> = ({ product, isOpen, onClose }) => 
                 <X size={24} />
               </button>
               <img
-                src={product.image ? `http://localhost:5000${product.image}` : 'https://via.placeholder.com/400x500?text=No+Image'}
+                src={
+                  product.image
+                    ? `http://localhost:5000${product.image}`
+                    : "https://via.placeholder.com/400x500?text=No+Image"
+                }
                 alt={product.name}
                 className="max-h-125 object-contain"
               />
@@ -150,14 +211,26 @@ const ProductDetail: FC<ProductDetailProps> = ({ product, isOpen, onClose }) => 
             {/* Right - Product Details */}
             <div className="p-8 lg:p-12 flex flex-col h-full">
               <div className="grow">
+                {/* Collection Badge */}
+                <p className="text-xs tracking-[0.3em] uppercase text-zinc-500 mb-2">
+                  {getCollectionText()}
+                </p>
+
                 {/* Product Name */}
                 <h1 className="text-2xl lg:text-3xl font-light tracking-wider uppercase mb-4">
                   {product.name}
                 </h1>
 
                 {/* Price */}
-                <div className="text-xl mb-8">
-                  <span className="text-zinc-300">{getPriceBySize()} dh</span>
+                <div className="mb-8">
+                  <span className="text-xl text-zinc-300">
+                    {getPriceBySize()} dh
+                  </span>
+                  {selectedSize !== "full" && (
+                    <p className="text-xs text-zinc-500 mt-1">
+                      Full bottle: {product.full_bottle_price} dh
+                    </p>
+                  )}
                 </div>
 
                 {/* Size Selection */}
@@ -165,36 +238,45 @@ const ProductDetail: FC<ProductDetailProps> = ({ product, isOpen, onClose }) => 
                   <h3 className="text-sm tracking-wider uppercase mb-3 text-zinc-400">
                     Size
                   </h3>
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-3">
                     <button
-                      onClick={() => setSelectedSize('5ml')}
+                      onClick={() => setSelectedSize("5ml")}
+                      disabled={product.price_5ml === 0}
                       className={`px-6 py-3 border transition-all duration-200 ${
-                        selectedSize === '5ml'
-                          ? 'border-white bg-white text-black'
-                          : 'border-zinc-700 hover:border-zinc-500'
+                        selectedSize === "5ml"
+                          ? "border-white bg-white text-black"
+                          : product.price_5ml === 0
+                            ? "border-zinc-800 text-zinc-600 cursor-not-allowed"
+                            : "border-zinc-700 hover:border-zinc-500"
                       }`}
                     >
-                      5ml
+                      5ml {product.price_5ml > 0 && `(${product.price_5ml}dh)`}
                     </button>
+
                     <button
-                      onClick={() => setSelectedSize('10ml')}
+                      onClick={() => setSelectedSize("10ml")}
+                      disabled={product.price_10ml === 0}
                       className={`px-6 py-3 border transition-all duration-200 ${
-                        selectedSize === '10ml'
-                          ? 'border-white bg-white text-black'
-                          : 'border-zinc-700 hover:border-zinc-500'
+                        selectedSize === "10ml"
+                          ? "border-white bg-white text-black"
+                          : product.price_10ml === 0
+                            ? "border-zinc-800 text-zinc-600 cursor-not-allowed"
+                            : "border-zinc-700 hover:border-zinc-500"
                       }`}
                     >
-                      10ml
+                      10ml{" "}
+                      {product.price_10ml > 0 && `(${product.price_10ml}dh)`}
                     </button>
+
                     <button
-                      onClick={() => setSelectedSize('full')}
+                      onClick={() => setSelectedSize("full")}
                       className={`px-6 py-3 border transition-all duration-200 ${
-                        selectedSize === 'full'
-                          ? 'border-white bg-white text-black'
-                          : 'border-zinc-700 hover:border-zinc-500'
+                        selectedSize === "full"
+                          ? "border-white bg-white text-black"
+                          : "border-zinc-700 hover:border-zinc-500"
                       }`}
                     >
-                      Full Bottle
+                      Full Bottle ({product.full_bottle_price}dh)
                     </button>
                   </div>
                 </div>
@@ -206,7 +288,7 @@ const ProductDetail: FC<ProductDetailProps> = ({ product, isOpen, onClose }) => 
                   </h3>
                   <div className="flex items-center gap-4">
                     <button
-                      onClick={() => handleQuantityChange('decrease')}
+                      onClick={() => handleQuantityChange("decrease")}
                       disabled={quantity <= 1}
                       className="w-12 h-12 border border-zinc-700 hover:border-zinc-500 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
                     >
@@ -214,7 +296,7 @@ const ProductDetail: FC<ProductDetailProps> = ({ product, isOpen, onClose }) => 
                     </button>
                     <span className="text-xl w-12 text-center">{quantity}</span>
                     <button
-                      onClick={() => handleQuantityChange('increase')}
+                      onClick={() => handleQuantityChange("increase")}
                       className="w-12 h-12 border border-zinc-700 hover:border-zinc-500 flex items-center justify-center transition-colors"
                     >
                       <Plus size={16} />
@@ -223,23 +305,33 @@ const ProductDetail: FC<ProductDetailProps> = ({ product, isOpen, onClose }) => 
                 </div>
 
                 {/* Buttons */}
-                {!isAvailable ? (
+                {!isAvailable || isOutOfStock ? (
                   <button
                     disabled
                     className="w-full py-4 mb-6 text-sm tracking-widest uppercase bg-zinc-800 text-zinc-500 cursor-not-allowed"
                   >
-                    {isComingSoon ? 'Coming Soon' : 'Sold Out'}
+                    {isComingSoon ? "Coming Soon" : "Sold Out"}
                   </button>
                 ) : (
                   <div className="flex gap-4 mb-6">
                     <button
-                      className="flex-1 py-4 text-sm tracking-widest uppercase bg-white text-black hover:bg-zinc-200 transition-colors"
+                      disabled={!isSizeAvailable()}
+                      className={`flex-1 py-4 text-sm tracking-widest uppercase bg-white text-black transition-colors ${
+                        !isSizeAvailable()
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:bg-zinc-200"
+                      }`}
                     >
                       Add to Cart
                     </button>
                     <button
                       onClick={() => setIsBuyNowOpen(true)}
-                      className="flex-1 py-4 text-sm tracking-widest uppercase border border-white text-white hover:bg-white hover:text-black transition-colors"
+                      disabled={!isSizeAvailable()}
+                      className={`flex-1 py-4 text-sm tracking-widest uppercase border border-white text-white transition-colors ${
+                        !isSizeAvailable()
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:bg-white hover:text-black"
+                      }`}
                     >
                       Buy Now
                     </button>
@@ -254,9 +346,11 @@ const ProductDetail: FC<ProductDetailProps> = ({ product, isOpen, onClose }) => 
                       <span>▲</span>
                     </button>
                     <div className="text-sm leading-relaxed text-zinc-400 space-y-3">
-                      {product.description.split('\n').map((paragraph, index) => (
-                        <p key={index}>{paragraph}</p>
-                      ))}
+                      {product.description
+                        .split("\n")
+                        .map((paragraph, index) => (
+                          <p key={index}>{paragraph}</p>
+                        ))}
                     </div>
                   </div>
                 )}
@@ -274,9 +368,13 @@ const ProductDetail: FC<ProductDetailProps> = ({ product, isOpen, onClose }) => 
         </div>
       </div>
 
+      {/* Buy Now Modal */}
       {isBuyNowOpen && (
         <div className="fixed inset-0 z-80 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/80" onClick={() => setIsBuyNowOpen(false)} />
+          <div
+            className="absolute inset-0 bg-black/80"
+            onClick={() => setIsBuyNowOpen(false)}
+          />
           <div className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl p-6 shadow-2xl">
             <button
               onClick={() => setIsBuyNowOpen(false)}
@@ -286,11 +384,16 @@ const ProductDetail: FC<ProductDetailProps> = ({ product, isOpen, onClose }) => 
             </button>
 
             <h2 className="text-xl uppercase tracking-wider mb-2">Buy Now</h2>
-            <p className="text-sm text-zinc-400 mb-6">Enter your delivery details to submit the order.</p>
+            <p className="text-sm text-zinc-400 mb-6">
+              {product.name} - {selectedSize} ({getPriceBySize()} dh x{" "}
+              {quantity})
+            </p>
 
             <form className="space-y-4" onSubmit={handleBuyNowSubmit}>
               <div>
-                <label className="block text-xs uppercase tracking-widest text-zinc-400 mb-2">Full Name</label>
+                <label className="block text-xs uppercase tracking-widest text-zinc-400 mb-2">
+                  Full Name
+                </label>
                 <input
                   required
                   value={fullName}
@@ -301,7 +404,9 @@ const ProductDetail: FC<ProductDetailProps> = ({ product, isOpen, onClose }) => 
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-widest text-zinc-400 mb-2">Phone Number</label>
+                <label className="block text-xs uppercase tracking-widest text-zinc-400 mb-2">
+                  Phone Number
+                </label>
                 <input
                   required
                   value={phoneNumber}
@@ -312,13 +417,15 @@ const ProductDetail: FC<ProductDetailProps> = ({ product, isOpen, onClose }) => 
               </div>
 
               <div>
-                <label className="block text-xs uppercase tracking-widest text-zinc-400 mb-2">Location</label>
+                <label className="block text-xs uppercase tracking-widest text-zinc-400 mb-2">
+                  Location
+                </label>
                 <textarea
                   required
                   value={location}
                   onChange={(event) => setLocation(event.target.value)}
                   className="w-full bg-black border border-zinc-700 rounded-lg px-4 py-3 text-white outline-none focus:border-white min-h-28 resize-none"
-                  placeholder="Your location"
+                  placeholder="Your delivery address"
                 />
               </div>
 

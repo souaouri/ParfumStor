@@ -4,13 +4,16 @@ import { useNavigate } from "react-router-dom";
 import { User, ShoppingCart } from "lucide-react";
 import AuthModal from "./AuthModal";
 import Cart from "./Cart.tsx";
-
 import Navbar from "./Navbar.tsx";
 
 interface Product {
   id: number;
   name: string;
-  price: number;
+  full_bottle_price: number; // Changed from 'price'
+  price_5ml: number; // New field
+  price_10ml: number; // New field
+  category: string; // New field (original/copy)
+  sex: string; // New field (men/women/unisex)
   status?: string;
   image?: string;
   image2?: string;
@@ -31,13 +34,13 @@ interface CartItem {
 // Hero slides data for MEN carousel
 const menSlides = [
   {
-    image: 'url("public/men.png")',
+    image: 'url("/men.png")', // Fixed path (removed 'public/')
     subtitle: "Men Collection",
     title: "Bold Identity",
     cta: "Shop Men",
   },
   {
-    image: 'url("public/section.png")',
+    image: 'url("/section.png")', // Fixed path (removed 'public/')
     subtitle: "Men Collection",
     title: "Modern Elegance",
     cta: "Shop Men",
@@ -47,7 +50,7 @@ const menSlides = [
 // Hero slides data for WOMEN carousel
 const womenSlides = [
   {
-    image: 'url("public/women.png")',
+    image: 'url("/women.png")', // Fixed path (removed 'public/')
     subtitle: "Women Collection",
     title: "Timeless Elegance",
     cta: "Shop Women",
@@ -59,6 +62,8 @@ const Dashboard = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
     const storedCart = localStorage.getItem("cartItems");
     if (!storedCart) return [];
@@ -76,7 +81,7 @@ const Dashboard = () => {
   const [isMenHovering, setIsMenHovering] = useState(false);
   const [isWomenHovering, setIsWomenHovering] = useState(false);
 
-  // Auto-rotate MEN carousel every 5 seconds (right to left)
+  // Auto-rotate MEN carousel every 5 seconds
   useEffect(() => {
     if (isMenHovering) return;
     const interval = setInterval(() => {
@@ -85,7 +90,7 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [isMenHovering]);
 
-  // Auto-rotate WOMEN carousel every 5 seconds (right to left)
+  // Auto-rotate WOMEN carousel every 5 seconds
   useEffect(() => {
     if (isWomenHovering) return;
     const interval = setInterval(() => {
@@ -97,20 +102,23 @@ const Dashboard = () => {
   // Fetch products from API
   useEffect(() => {
     const fetchProducts = async () => {
+      setLoading(true);
       try {
         const response = await fetch("http://localhost:5000/api/products");
         const data = await response.json();
         if (data.products) {
           setProducts(data.products);
+          setFeaturedProducts(data.products); // ← SHOW ALL PRODUCTS
         }
       } catch (error) {
         console.error("Error fetching products:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchProducts();
   }, []);
-
   const handleProductClick = (product: Product) => {
     navigate(`/product/${product.id}`);
   };
@@ -118,6 +126,12 @@ const Dashboard = () => {
   const handleCheckoutSuccess = () => {
     setCartItems([]);
     localStorage.setItem("cartItems", JSON.stringify([]));
+  };
+
+  const getImageUrl = (imagePath: string | undefined) => {
+    if (!imagePath) return "https://via.placeholder.com/400x500?text=No+Image";
+    const cleanPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
+    return `http://localhost:5000${cleanPath}`;
   };
 
   const currentMenSlide = menSlides[menIndex];
@@ -140,10 +154,11 @@ const Dashboard = () => {
         cartItems={cartItems}
         onCheckoutSuccess={handleCheckoutSuccess}
       />
+
       {/* Hero Section */}
       <section className="relative mt-[88px] overflow-hidden bg-white h-[120vh]">
         <div className="grid grid-rows-2">
-          {/* MEN CAROUSEL - No buttons, just auto-rotate */}
+          {/* MEN CAROUSEL */}
           <div
             className="relative group overflow-hidden h-[60vh]"
             onMouseEnter={() => setIsMenHovering(true)}
@@ -169,14 +184,17 @@ const Dashboard = () => {
                   {currentMenSlide.title}
                 </h1>
 
-                <button className="border border-white text-white px-10 py-3 text-[11px] uppercase tracking-[0.28em] hover:bg-white hover:text-black transition-all duration-500">
+                <button
+                  onClick={() => navigate("/collection/men")}
+                  className="border border-white text-white px-10 py-3 text-[11px] uppercase tracking-[0.28em] hover:bg-white hover:text-black transition-all duration-500"
+                >
                   {currentMenSlide.cta}
                 </button>
               </div>
             </div>
           </div>
 
-          {/* WOMEN CAROUSEL - No buttons, just auto-rotate */}
+          {/* WOMEN CAROUSEL */}
           <div
             className="relative group overflow-hidden h-[60vh]"
             onMouseEnter={() => setIsWomenHovering(true)}
@@ -202,7 +220,10 @@ const Dashboard = () => {
                   {currentWomenSlide.title}
                 </h1>
 
-                <button className="border border-white text-white px-10 py-3 text-[11px] uppercase tracking-[0.28em] hover:bg-white hover:text-black transition-all duration-500">
+                <button
+                  onClick={() => navigate("/collection/women")}
+                  className="border border-white text-white px-10 py-3 text-[11px] uppercase tracking-[0.28em] hover:bg-white hover:text-black transition-all duration-500"
+                >
                   {currentWomenSlide.cta}
                 </button>
               </div>
@@ -224,27 +245,20 @@ const Dashboard = () => {
             <span className="text-4xl font-serif tracking-tight text-black">
               DIOR
             </span>
-
             <span className="text-3xl font-light tracking-[0.35em] text-black uppercase">
               CHANEL
             </span>
-
             <span className="text-4xl italic font-serif text-black">Creed</span>
-
             <span className="text-3xl font-light uppercase tracking-[0.2em] text-black">
               ARMANI
             </span>
-
             <span className="text-4xl font-serif tracking-[0.15em] text-black">
               TOM FORD
             </span>
-
             <span className="text-3xl font-light tracking-[0.35em] text-black">
               YSL
             </span>
-
             <span className="text-4xl italic font-serif text-black">Gucci</span>
-
             <span className="text-3xl font-light uppercase text-black">
               LANCÔME
             </span>
@@ -255,27 +269,20 @@ const Dashboard = () => {
             <span className="text-4xl font-serif tracking-tight text-black">
               DIOR
             </span>
-
             <span className="text-3xl font-light tracking-[0.35em] text-black uppercase">
               CHANEL
             </span>
-
             <span className="text-4xl italic font-serif text-black">Creed</span>
-
             <span className="text-3xl font-light uppercase tracking-[0.2em] text-black">
               ARMANI
             </span>
-
             <span className="text-4xl font-serif tracking-[0.15em] text-black">
               TOM FORD
             </span>
-
             <span className="text-3xl font-light tracking-[0.35em] text-black">
               YSL
             </span>
-
             <span className="text-4xl italic font-serif text-black">Gucci</span>
-
             <span className="text-3xl font-light uppercase text-black">
               LANCÔME
             </span>
@@ -290,12 +297,22 @@ const Dashboard = () => {
       {/* Product Grid */}
       <div className="bg-white px-6 md:px-10 lg:px-16 py-14">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
-          {products.length === 0 ? (
+          {loading ? (
+            // Loading skeletons
+            [...Array(8)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="bg-gray-100 h-[420px] mb-6" />
+                <div className="h-4 bg-gray-100 mb-3 w-3/4" />
+                <div className="h-3 bg-gray-100 mb-2 w-1/2" />
+                <div className="h-3 bg-gray-100 w-1/3" />
+              </div>
+            ))
+          ) : featuredProducts.length === 0 ? (
             <div className="col-span-full py-20 text-center text-zinc-500">
               <p>No products available</p>
             </div>
           ) : (
-            products.map((product) => (
+            featuredProducts.map((product) => (
               <div
                 key={product.id}
                 onClick={() => handleProductClick(product)}
@@ -305,22 +322,20 @@ const Dashboard = () => {
                 <div className="bg-white mb-6 overflow-hidden">
                   <div className="relative h-[420px] flex items-center justify-center p-10">
                     <img
-                      src={
-                        product.image
-                          ? `http://localhost:5000${product.image}`
-                          : "https://via.placeholder.com/400x500?text=No+Image"
-                      }
+                      src={getImageUrl(product.image)}
                       alt={product.name}
                       className={`max-h-full object-contain transition-all duration-700 group-hover:scale-105 ${
                         product.image2 ? "group-hover:opacity-0" : ""
                       }`}
+                      loading="lazy"
                     />
 
                     {product.image2 && (
                       <img
-                        src={`http://localhost:5000${product.image2}`}
+                        src={getImageUrl(product.image2)}
                         alt={`${product.name} hover`}
                         className="absolute inset-0 w-full h-full object-contain opacity-0 transition-all duration-700 group-hover:opacity-100 group-hover:scale-105"
+                        loading="lazy"
                       />
                     )}
                   </div>
@@ -332,23 +347,42 @@ const Dashboard = () => {
                     {product.name}
                   </h3>
 
+                  {/* Show decant options if available */}
+                  {(product.price_5ml > 0 || product.price_10ml > 0) && (
+                    <div className="flex gap-2 text-[10px] uppercase tracking-[0.15em] text-zinc-400">
+                      {product.price_5ml > 0 && (
+                        <span>5ml: {product.price_5ml}dh</span>
+                      )}
+                      {product.price_5ml > 0 && product.price_10ml > 0 && (
+                        <span>•</span>
+                      )}
+                      {product.price_10ml > 0 && (
+                        <span>10ml: {product.price_10ml}dh</span>
+                      )}
+                    </div>
+                  )}
+
                   <p className="text-zinc-500 text-[13px]">
-                    {product.price} dh
+                    {product.full_bottle_price} dh
                   </p>
 
                   <span
                     className={`block text-[11px] uppercase tracking-[0.18em]
-              ${
-                product.status === "available"
-                  ? "text-zinc-500"
-                  : product.status === "sold out"
-                    ? "text-red-500"
-                    : product.status === "coming soon"
-                      ? "text-amber-600"
-                      : "text-zinc-500"
-              }`}
+                      ${
+                        product.status === "available"
+                          ? "text-green-600"
+                          : product.status === "out_of_stock"
+                            ? "text-red-500"
+                            : product.status === "coming_soon"
+                              ? "text-amber-600"
+                              : "text-zinc-500"
+                      }`}
                   >
-                    {product.status || "Available"}
+                    {product.status === "out_of_stock"
+                      ? "Sold Out"
+                      : product.status === "coming_soon"
+                        ? "Coming Soon"
+                        : "Available"}
                   </span>
                 </div>
               </div>
@@ -357,9 +391,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Decants Collection - Split Section (Image Left | Text Right) */}
+      {/* Decants Collection - Split Section */}
       <section className="grid grid-cols-1 lg:grid-cols-2 min-h-[550px] h-[80vh]">
-        {/* Left Side - Image with hover zoom effect */}
         <div className="relative group overflow-hidden min-h-[350px] lg:min-h-[550px]">
           <div
             className="absolute inset-0 bg-cover bg-center transition-transform duration-[2500ms] group-hover:scale-105"
@@ -367,19 +400,15 @@ const Dashboard = () => {
               backgroundImage: 'url("/bott.jpg")',
             }}
           />
-          {/* Optional subtle gradient overlay for depth */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-transparent to-transparent" />
         </div>
 
-        {/* Right Side - Text & Content */}
         <div className="flex items-center justify-center bg-white px-6 md:px-10 lg:px-16 py-16 lg:py-0">
           <div className="max-w-md w-full">
-            {/* Badge */}
             <span className="text-[10px] uppercase tracking-[0.3em] text-black/50 border-l-2 border-black/60 pl-3">
               Sample First, Commit Later
             </span>
 
-            {/* Title */}
             <h2 className="text-4xl md:text-5xl font-light uppercase tracking-[0.02em] text-black leading-[1.1] mt-6 mb-4">
               Decants
               <span className="block text-black/40 text-2xl md:text-3xl mt-2">
@@ -389,14 +418,12 @@ const Dashboard = () => {
 
             <div className="w-16 h-px bg-black/30 my-6" />
 
-            {/* Description */}
             <p className="text-black/60 text-sm leading-relaxed mb-8">
               Experience the luxury of choice with our premium decant
               collection. Perfectly sized to discover, travel, and fall in love
               with your next signature scent.
             </p>
 
-            {/* Features Grid */}
             <div className="grid grid-cols-2 gap-x-6 gap-y-3 mb-8">
               {[
                 "5ml Travel Size",
@@ -415,9 +442,11 @@ const Dashboard = () => {
               ))}
             </div>
 
-            {/* Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <button className="bg-black text-white px-8 py-3 text-[11px] uppercase tracking-[0.25em] hover:bg-black/90 transition-all duration-500">
+              <button
+                onClick={() => navigate("/collection/unisex")}
+                className="bg-black text-white px-8 py-3 text-[11px] uppercase tracking-[0.25em] hover:bg-black/90 transition-all duration-500"
+              >
                 Shop Decants
               </button>
               <button className="border border-black/40 text-black px-8 py-3 text-[11px] uppercase tracking-[0.25em] hover:bg-black/10 transition-all duration-500">
@@ -428,12 +457,10 @@ const Dashboard = () => {
         </div>
       </section>
 
-      {/* Footer */}
+      {/* Footer -保持不变 */}
       <footer className="bg-black text-white/70 border-t border-white/10">
-        {/* Main Footer Content */}
         <div className="max-w-7xl mx-auto px-6 md:px-10 lg:px-16 py-16 lg:py-20">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
-            {/* Brand Column */}
             <div className="space-y-6">
               <img
                 src="/LOGO.png"
@@ -457,7 +484,6 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Quick Links */}
             <div className="space-y-6">
               <h4 className="text-white text-xs uppercase tracking-[0.3em] font-normal">
                 Explore
@@ -471,18 +497,23 @@ const Dashboard = () => {
                   "New Arrivals",
                 ].map((link) => (
                   <li key={link}>
-                    <a
-                      href="#"
+                    <button
+                      onClick={() => {
+                        if (link === "Men Collection")
+                          navigate("/collection/men");
+                        else if (link === "Women Collection")
+                          navigate("/collection/women");
+                        else navigate("/");
+                      }}
                       className="text-sm text-white/60 hover:text-white transition-colors duration-300 uppercase tracking-wide"
                     >
                       {link}
-                    </a>
+                    </button>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Information */}
             <div className="space-y-6">
               <h4 className="text-white text-xs uppercase tracking-[0.3em] font-normal">
                 Information
@@ -507,13 +538,10 @@ const Dashboard = () => {
               </ul>
             </div>
 
-            {/* Contact & Newsletter */}
             <div className="space-y-6">
               <h4 className="text-white text-xs uppercase tracking-[0.3em] font-normal">
                 Contact
               </h4>
-
-              {/* Contact Info */}
               <div className="space-y-3 text-sm text-white/60">
                 <p className="flex items-start gap-3">
                   <span className="text-white/40 min-w-[20px]">✉️</span>
@@ -539,7 +567,6 @@ const Dashboard = () => {
                 </p>
               </div>
 
-              {/* Newsletter Signup */}
               <div className="pt-4">
                 <p className="text-xs uppercase tracking-[0.25em] text-white/50 mb-3">
                   Subscribe for exclusive offers
@@ -558,13 +585,10 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Divider */}
           <div className="border-t border-white/10 my-12 lg:my-16"></div>
 
-          {/* Bottom Bar */}
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] uppercase tracking-[0.25em] text-white/40">
             <p>© 2026 Rwi7a. All rights reserved.</p>
-
             <div className="flex gap-8">
               <a href="#" className="hover:text-white/70 transition-colors">
                 Terms of Use
@@ -576,8 +600,6 @@ const Dashboard = () => {
                 Cookies
               </a>
             </div>
-
-            {/* Payment Methods */}
             <div className="flex gap-4 text-white/50">
               <span>VISA</span>
               <span>Mastercard</span>

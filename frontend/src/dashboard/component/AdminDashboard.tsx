@@ -1,14 +1,26 @@
 // AdminDashboard.tsx
-import React, { useState, useEffect } from 'react';
-import { Package, ShoppingBag, Plus, Trash2, Edit, Check, Clock, X } from 'lucide-react';
-import FeedbackModal from './FeedbackModal';
-import ConfirmModal from './ConfirmModal';
-
+import React, { useState, useEffect } from "react";
+import {
+  Package,
+  ShoppingBag,
+  Plus,
+  Trash2,
+  Edit,
+  Check,
+  Clock,
+  X,
+} from "lucide-react";
+import FeedbackModal from "./FeedbackModal";
+import ConfirmModal from "./ConfirmModal";
 
 interface Product {
   id?: number;
   name: string;
-  price: number;
+  full_bottle_price: number;
+  price_5ml: number;
+  price_10ml: number;
+  category: string;
+  sex: string;
   description?: string;
   image?: string;
   image2?: string;
@@ -25,37 +37,46 @@ interface Order {
   size: string;
   quantity: number;
   totalPrice: number;
-  status: 'pending' | 'done';
+  status: "pending" | "done";
   createdAt: string;
 }
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products');
+  const [activeTab, setActiveTab] = useState<"products" | "orders">("products");
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showEditProduct, setShowEditProduct] = useState(false);
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [image2File, setImage2File] = useState<File | null>(null);
-  const [formData, setFormData] = useState<Product>({
-    name: '',
-    price: 0,
-    description: '',
-    image: '',
-    image2: '',
+  const [formData, setFormData] = useState({
+    name: "",
+    category: "original",
+    sex: "men",
+    description: "",
+    full_bottle_price: 0,
+    price_5ml: 0,
+    price_10ml: 0,
+    image: "",
+    image2: "",
     stock: 0,
-    status: 'available'
+    status: "available",
   });
   const [orders, setOrders] = useState<Order[]>([]);
-  const [feedback, setFeedback] = useState<{ isOpen: boolean; title: string; message: string; type: 'success' | 'error' }>({
+  const [feedback, setFeedback] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "success" | "error";
+  }>({
     isOpen: false,
-    title: '',
-    message: '',
-    type: 'success',
+    title: "",
+    message: "",
+    type: "success",
   });
   const [confirmState, setConfirmState] = useState<{
     isOpen: boolean;
-    type: 'delete-product' | 'delete-order' | null;
+    type: "delete-product" | "delete-order" | null;
     id: number | null;
     title: string;
     message: string;
@@ -63,32 +84,32 @@ const AdminDashboard = () => {
     isOpen: false,
     type: null,
     id: null,
-    title: '',
-    message: '',
+    title: "",
+    message: "",
   });
 
   // Fetch products from API
   const fetchProducts = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/products');
+      const response = await fetch("http://localhost:5000/api/products");
       const data = await response.json();
       if (data.products) {
         setProducts(data.products);
       }
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error("Error fetching products:", error);
     }
   };
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/orders');
+      const response = await fetch("http://localhost:5000/api/orders");
       const data = await response.json();
       if (data.orders) {
         setOrders(data.orders);
       }
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      console.error("Error fetching orders:", error);
     }
   };
 
@@ -101,46 +122,55 @@ const AdminDashboard = () => {
     void loadDashboardData();
   }, []);
 
-  const handleStatusChange = async (orderId: number, newStatus: 'pending' | 'done') => {
+  const handleStatusChange = async (
+    orderId: number,
+    newStatus: "pending" | "done",
+  ) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `http://localhost:5000/api/orders/${orderId}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: newStatus }),
         },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      );
 
       if (response.ok) {
         fetchOrders();
       }
     } catch (error) {
-      console.error('Error updating order status:', error);
+      console.error("Error updating order status:", error);
     }
   };
 
   const deleteOrderById = async (orderId: number) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/orders/${orderId}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `http://localhost:5000/api/orders/${orderId}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (response.ok) {
         fetchOrders();
         setFeedback({
           isOpen: true,
-          title: 'Deleted',
-          message: 'Order removed successfully!',
-          type: 'success',
+          title: "Deleted",
+          message: "Order removed successfully!",
+          type: "success",
         });
       }
     } catch (error) {
-      console.error('Error deleting order:', error);
+      console.error("Error deleting order:", error);
       setFeedback({
         isOpen: true,
-        title: 'Delete Failed',
-        message: 'Failed to remove order',
-        type: 'error',
+        title: "Delete Failed",
+        message: "Failed to remove order",
+        type: "error",
       });
     }
   };
@@ -148,43 +178,45 @@ const AdminDashboard = () => {
   const handleRemoveOrder = (orderId: number) => {
     setConfirmState({
       isOpen: true,
-      type: 'delete-order',
+      type: "delete-order",
       id: orderId,
-      title: 'Remove Order',
-      message: 'Are you sure you want to remove this order?',
+      title: "Remove Order",
+      message: "Are you sure you want to remove this order?",
     });
   };
 
   const deleteProductById = async (productId: number) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
-        method: 'DELETE',
-      });
-      
+      const response = await fetch(
+        `http://localhost:5000/api/products/${productId}`,
+        {
+          method: "DELETE",
+        },
+      );
+
       if (response.ok) {
-        // Refresh the products list
         fetchProducts();
         setFeedback({
           isOpen: true,
-          title: 'Deleted',
-          message: 'Product deleted successfully!',
-          type: 'success',
+          title: "Deleted",
+          message: "Product deleted successfully!",
+          type: "success",
         });
       } else {
         setFeedback({
           isOpen: true,
-          title: 'Delete Failed',
-          message: 'Failed to delete product',
-          type: 'error',
+          title: "Delete Failed",
+          message: "Failed to delete product",
+          type: "error",
         });
       }
     } catch (error) {
-      console.error('Error deleting product:', error);
+      console.error("Error deleting product:", error);
       setFeedback({
         isOpen: true,
-        title: 'Delete Failed',
-        message: 'Failed to delete product',
-        type: 'error',
+        title: "Delete Failed",
+        message: "Failed to delete product",
+        type: "error",
       });
     }
   };
@@ -192,10 +224,10 @@ const AdminDashboard = () => {
   const handleDeleteProduct = (productId: number) => {
     setConfirmState({
       isOpen: true,
-      type: 'delete-product',
+      type: "delete-product",
       id: productId,
-      title: 'Delete Product',
-      message: 'Are you sure you want to delete this product?',
+      title: "Delete Product",
+      message: "Are you sure you want to delete this product?",
     });
   };
 
@@ -204,11 +236,11 @@ const AdminDashboard = () => {
       return;
     }
 
-    if (confirmState.type === 'delete-product') {
+    if (confirmState.type === "delete-product") {
       void deleteProductById(confirmState.id);
     }
 
-    if (confirmState.type === 'delete-order') {
+    if (confirmState.type === "delete-order") {
       void deleteOrderById(confirmState.id);
     }
 
@@ -216,20 +248,24 @@ const AdminDashboard = () => {
       isOpen: false,
       type: null,
       id: null,
-      title: '',
-      message: '',
+      title: "",
+      message: "",
     });
   };
 
   const handleEditProduct = (product: Product) => {
     setFormData({
       name: product.name,
-      price: product.price,
-      image2: product.image2 || '',
-      description: product.description || '',
-      image: product.image || '',
+      category: product.category || "original",
+      sex: product.sex || "men",
+      description: product.description || "",
+      full_bottle_price: product.full_bottle_price || 0,
+      price_5ml: product.price_5ml || 0,
+      price_10ml: product.price_10ml || 0,
+      image: product.image || "",
+      image2: product.image2 || "",
       stock: product.stock || 0,
-      status: product.status || 'available'
+      status: product.status || "available",
     });
     setEditingProductId(product.id || null);
     setShowEditProduct(true);
@@ -242,69 +278,81 @@ const AdminDashboard = () => {
 
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append('name', formData.name);
-      formDataToSend.append('price', formData.price.toString());
-      formDataToSend.append('description', formData.description || '');
-      formDataToSend.append('stock', (formData.stock || 0).toString());
-      formDataToSend.append('status', formData.status || 'available');
-      
-      // Include existing images if no new images selected
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("category", formData.category);
+      formDataToSend.append("sex", formData.sex);
+      formDataToSend.append("description", formData.description || "");
+      formDataToSend.append(
+        "full_bottle_price",
+        formData.full_bottle_price.toString(),
+      );
+      formDataToSend.append("price_5ml", formData.price_5ml.toString());
+      formDataToSend.append("price_10ml", formData.price_10ml.toString());
+      formDataToSend.append("stock", (formData.stock || 0).toString());
+      formDataToSend.append("status", formData.status || "available");
+
       if (!imageFile && formData.image) {
-        formDataToSend.append('image', formData.image);
+        formDataToSend.append("image", formData.image);
       }
       if (!image2File && formData.image2) {
-        formDataToSend.append('image2', formData.image2);
-      }
-      
-      if (imageFile) {
-        formDataToSend.append('image', imageFile);
-      }
-      if (image2File) {
-        formDataToSend.append('image2', image2File);
+        formDataToSend.append("image2", formData.image2);
       }
 
-      const response = await fetch(`http://localhost:5000/api/products/${editingProductId}`, {
-        method: 'PUT',
-        body: formDataToSend,
-      });
-      
+      if (imageFile) {
+        formDataToSend.append("image", imageFile);
+      }
+      if (image2File) {
+        formDataToSend.append("image2", image2File);
+      }
+
+      const response = await fetch(
+        `http://localhost:5000/api/products/${editingProductId}`,
+        {
+          method: "PUT",
+          body: formDataToSend,
+        },
+      );
+
       if (response.ok) {
         setFeedback({
           isOpen: true,
-          title: 'Updated',
-          message: 'Product updated successfully!',
-          type: 'success',
+          title: "Updated",
+          message: "Product updated successfully!",
+          type: "success",
         });
         setFormData({
-          name: '',
-          price: 0,
-          description: '',
-          image: '',
-          image2: '',
+          name: "",
+          category: "original",
+          sex: "men",
+          description: "",
+          full_bottle_price: 0,
+          price_5ml: 0,
+          price_10ml: 0,
+          image: "",
+          image2: "",
           stock: 0,
-          status: 'available'
+          status: "available",
         });
         setImageFile(null);
         setImage2File(null);
         setShowEditProduct(false);
         setEditingProductId(null);
-        // Refresh products list
         fetchProducts();
       } else {
         setFeedback({
           isOpen: true,
-          title: 'Update Failed',
-          message: 'Failed to update product',
-          type: 'error',
+          title: "Update Failed",
+          message: "Failed to update product",
+          type: "error",
         });
       }
     } catch (error) {
-      console.error('Error updating product:', error);
+      console.error("Error updating product:", error);
       setFeedback({
         isOpen: true,
-        title: 'Update Failed',
-        message: 'Failed to update product',
-        type: 'error',
+        title: "Update Failed",
+        message: "Failed to update product",
+        type: "error",
       });
     }
   };
@@ -313,53 +361,71 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append('name', formData.name);
-      formDataToSend.append('price', formData.price.toString());
-      formDataToSend.append('description', formData.description || '');
-      formDataToSend.append('stock', (formData.stock || 0).toString());
-      formDataToSend.append('status', formData.status || 'available');
-      
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("category", formData.category);
+      formDataToSend.append("sex", formData.sex);
+      formDataToSend.append("description", formData.description || "");
+      formDataToSend.append(
+        "full_bottle_price",
+        formData.full_bottle_price.toString(),
+      );
+      formDataToSend.append("price_5ml", formData.price_5ml.toString());
+      formDataToSend.append("price_10ml", formData.price_10ml.toString());
+      formDataToSend.append("stock", (formData.stock || 0).toString());
+      formDataToSend.append("status", formData.status || "available");
+
       if (imageFile) {
-        formDataToSend.append('image', imageFile);
+        formDataToSend.append("image", imageFile);
       }
       if (image2File) {
-        formDataToSend.append('image2', image2File);
+        formDataToSend.append("image2", image2File);
       }
 
-      const response = await fetch('http://localhost:5000/api/products', {
-        method: 'POST',
+      const response = await fetch("http://localhost:5000/api/products", {
+        method: "POST",
         body: formDataToSend,
       });
-      
+
       if (response.ok) {
         setFeedback({
           isOpen: true,
-          title: 'Added',
-          message: 'Product added successfully!',
-          type: 'success',
+          title: "Added",
+          message: "Product added successfully!",
+          type: "success",
         });
         setFormData({
-          name: '',
-          price: 0,
-          description: '',
-          image: '',
-          image2: '',
+          name: "",
+          category: "original",
+          sex: "men",
+          description: "",
+          full_bottle_price: 0,
+          price_5ml: 0,
+          price_10ml: 0,
+          image: "",
+          image2: "",
           stock: 0,
-          status: 'available'
+          status: "available",
         });
         setImageFile(null);
         setImage2File(null);
         setShowAddProduct(false);
-        // Refresh products list
         fetchProducts();
+      } else {
+        const errorData = await response.json();
+        setFeedback({
+          isOpen: true,
+          title: "Add Failed",
+          message: errorData.message || "Failed to add product",
+          type: "error",
+        });
       }
     } catch (error) {
-      console.error('Error adding product:', error);
+      console.error("Error adding product:", error);
       setFeedback({
         isOpen: true,
-        title: 'Add Failed',
-        message: 'Failed to add product',
-        type: 'error',
+        title: "Add Failed",
+        message: "Failed to add product",
+        type: "error",
       });
     }
   };
@@ -382,22 +448,22 @@ const AdminDashboard = () => {
       <div className="border-b border-zinc-800">
         <div className="px-8 flex gap-6">
           <button
-            onClick={() => setActiveTab('products')}
+            onClick={() => setActiveTab("products")}
             className={`py-4 px-2 text-sm uppercase tracking-wider border-b-2 transition-colors ${
-              activeTab === 'products'
-                ? 'border-red-600 text-red-600'
-                : 'border-transparent text-zinc-400 hover:text-white'
+              activeTab === "products"
+                ? "border-red-600 text-red-600"
+                : "border-transparent text-zinc-400 hover:text-white"
             }`}
           >
             <Package className="inline-block mr-2" size={16} />
             Products
           </button>
           <button
-            onClick={() => setActiveTab('orders')}
+            onClick={() => setActiveTab("orders")}
             className={`py-4 px-2 text-sm uppercase tracking-wider border-b-2 transition-colors ${
-              activeTab === 'orders'
-                ? 'border-red-600 text-red-600'
-                : 'border-transparent text-zinc-400 hover:text-white'
+              activeTab === "orders"
+                ? "border-red-600 text-red-600"
+                : "border-transparent text-zinc-400 hover:text-white"
             }`}
           >
             <ShoppingBag className="inline-block mr-2" size={16} />
@@ -408,7 +474,7 @@ const AdminDashboard = () => {
 
       {/* Main Content */}
       <div className="px-8 py-6">
-        {activeTab === 'products' && (
+        {activeTab === "products" && (
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold">Manage Products</h2>
@@ -425,7 +491,10 @@ const AdminDashboard = () => {
             {showAddProduct && (
               <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 mb-6">
                 <h3 className="text-lg font-semibold mb-4">Add New Product</h3>
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form
+                  onSubmit={handleSubmit}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                >
                   <div>
                     <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2">
                       Product Name *
@@ -434,7 +503,9 @@ const AdminDashboard = () => {
                       type="text"
                       required
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
                       className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
                       placeholder="Enter product name"
                     />
@@ -442,13 +513,92 @@ const AdminDashboard = () => {
 
                   <div>
                     <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2">
-                      Price (dh) *
+                      Category *
+                    </label>
+                    <select
+                      required
+                      value={formData.category}
+                      onChange={(e) =>
+                        setFormData({ ...formData, category: e.target.value })
+                      }
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
+                    >
+                      <option value="original">Original</option>
+                      <option value="copy">Copy / Inspired</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2">
+                      Collection (Sex) *
+                    </label>
+                    <select
+                      required
+                      value={formData.sex}
+                      onChange={(e) =>
+                        setFormData({ ...formData, sex: e.target.value })
+                      }
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
+                    >
+                      <option value="men">Men</option>
+                      <option value="women">Women</option>
+                      <option value="unisex">Unisex</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2">
+                      Full Bottle Price (dh) *
                     </label>
                     <input
                       type="number"
+                      step="0.01"
                       required
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                      value={formData.full_bottle_price}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          full_bottle_price: parseFloat(e.target.value),
+                        })
+                      }
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2">
+                      5ml Price (dh)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.price_5ml}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          price_5ml: parseFloat(e.target.value),
+                        })
+                      }
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2">
+                      10ml Price (dh)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.price_10ml}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          price_10ml: parseFloat(e.target.value),
+                        })
+                      }
                       className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
                       placeholder="0.00"
                     />
@@ -460,7 +610,12 @@ const AdminDashboard = () => {
                     </label>
                     <textarea
                       value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
+                      }
                       className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
                       rows={3}
                       placeholder="Enter product description"
@@ -474,7 +629,9 @@ const AdminDashboard = () => {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                      onChange={(e) =>
+                        setImageFile(e.target.files?.[0] || null)
+                      }
                       className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-red-600 file:text-white hover:file:bg-red-700 file:cursor-pointer"
                     />
                   </div>
@@ -486,7 +643,9 @@ const AdminDashboard = () => {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => setImage2File(e.target.files?.[0] || null)}
+                      onChange={(e) =>
+                        setImage2File(e.target.files?.[0] || null)
+                      }
                       className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-red-600 file:text-white hover:file:bg-red-700 file:cursor-pointer"
                     />
                   </div>
@@ -498,7 +657,12 @@ const AdminDashboard = () => {
                     <input
                       type="number"
                       value={formData.stock}
-                      onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          stock: parseInt(e.target.value),
+                        })
+                      }
                       className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
                       placeholder="0"
                     />
@@ -510,12 +674,14 @@ const AdminDashboard = () => {
                     </label>
                     <select
                       value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, status: e.target.value })
+                      }
                       className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
                     >
                       <option value="available">Available</option>
-                      <option value="sold out">Sold Out</option>
-                      <option value="coming soon">Coming Soon</option>
+                      <option value="out_of_stock">Out of Stock</option>
+                      <option value="coming_soon">Coming Soon</option>
                     </select>
                   </div>
 
@@ -542,31 +708,116 @@ const AdminDashboard = () => {
             {showEditProduct && (
               <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 mb-6">
                 <h3 className="text-lg font-semibold mb-4">Edit Product</h3>
-                <form onSubmit={handleUpdateProduct} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form
+                  onSubmit={handleUpdateProduct}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                >
                   <div>
                     <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2">
                       Product Name *
                     </label>
                     <input
                       type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
                       required
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
+                      placeholder="Enter product name"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2">
-                      Price (dh) *
+                      Category *
+                    </label>
+                    <select
+                      required
+                      value={formData.category}
+                      onChange={(e) =>
+                        setFormData({ ...formData, category: e.target.value })
+                      }
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
+                    >
+                      <option value="original">Original</option>
+                      <option value="copy">Copy / Inspired</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2">
+                      Collection (Sex) *
+                    </label>
+                    <select
+                      required
+                      value={formData.sex}
+                      onChange={(e) =>
+                        setFormData({ ...formData, sex: e.target.value })
+                      }
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
+                    >
+                      <option value="men">Men</option>
+                      <option value="women">Women</option>
+                      <option value="unisex">Unisex</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2">
+                      Full Bottle Price (dh) *
                     </label>
                     <input
                       type="number"
                       step="0.01"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
                       required
+                      value={formData.full_bottle_price}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          full_bottle_price: parseFloat(e.target.value),
+                        })
+                      }
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2">
+                      5ml Price (dh)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.price_5ml}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          price_5ml: parseFloat(e.target.value),
+                        })
+                      }
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-400 mb-2">
+                      10ml Price (dh)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.price_10ml}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          price_10ml: parseFloat(e.target.value),
+                        })
+                      }
+                      className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
+                      placeholder="0.00"
                     />
                   </div>
 
@@ -576,10 +827,15 @@ const AdminDashboard = () => {
                     </label>
                     <textarea
                       value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
+                      }
                       className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
                       rows={3}
-                      placeholder="Product description..."
+                      placeholder="Enter product description"
                     />
                   </div>
 
@@ -590,11 +846,15 @@ const AdminDashboard = () => {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                      onChange={(e) =>
+                        setImageFile(e.target.files?.[0] || null)
+                      }
                       className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-red-600 file:text-white hover:file:bg-red-700 file:cursor-pointer"
                     />
                     {formData.image && (
-                      <p className="text-xs text-zinc-500 mt-2">Current: {formData.image}</p>
+                      <p className="text-xs text-zinc-500 mt-2">
+                        Current: {formData.image}
+                      </p>
                     )}
                   </div>
 
@@ -605,11 +865,15 @@ const AdminDashboard = () => {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => setImage2File(e.target.files?.[0] || null)}
+                      onChange={(e) =>
+                        setImage2File(e.target.files?.[0] || null)
+                      }
                       className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-red-600 file:text-white hover:file:bg-red-700 file:cursor-pointer"
                     />
                     {formData.image2 && (
-                      <p className="text-xs text-zinc-500 mt-2">Current: {formData.image2}</p>
+                      <p className="text-xs text-zinc-500 mt-2">
+                        Current: {formData.image2}
+                      </p>
                     )}
                   </div>
 
@@ -620,7 +884,12 @@ const AdminDashboard = () => {
                     <input
                       type="number"
                       value={formData.stock}
-                      onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          stock: parseInt(e.target.value),
+                        })
+                      }
                       className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
                       placeholder="0"
                     />
@@ -632,12 +901,14 @@ const AdminDashboard = () => {
                     </label>
                     <select
                       value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, status: e.target.value })
+                      }
                       className="w-full bg-zinc-800 border border-zinc-700 rounded px-4 py-3 text-sm focus:outline-none focus:border-red-600 transition-colors"
                     >
                       <option value="available">Available</option>
-                      <option value="sold out">Sold Out</option>
-                      <option value="coming soon">Coming Soon</option>
+                      <option value="out_of_stock">Out of Stock</option>
+                      <option value="coming_soon">Coming Soon</option>
                     </select>
                   </div>
 
@@ -654,12 +925,17 @@ const AdminDashboard = () => {
                         setShowEditProduct(false);
                         setEditingProductId(null);
                         setFormData({
-                          name: '',
-                          price: 0,
-                          description: '',
-                          image: '',
+                          name: "",
+                          category: "original",
+                          sex: "men",
+                          description: "",
+                          full_bottle_price: 0,
+                          price_5ml: 0,
+                          price_10ml: 0,
+                          image: "",
+                          image2: "",
                           stock: 0,
-                          status: 'available'
+                          status: "available",
                         });
                       }}
                       className="bg-zinc-700 text-white px-8 py-3 rounded-full text-xs font-bold uppercase hover:bg-zinc-600 transition-colors"
@@ -676,17 +952,39 @@ const AdminDashboard = () => {
               <table className="w-full">
                 <thead className="bg-zinc-800 border-b border-zinc-700">
                   <tr>
-                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">Product</th>
-                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">Price</th>
-                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">Stock</th>
-                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">Status</th>
-                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">Actions</th>
+                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">
+                      Product
+                    </th>
+                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">
+                      Category
+                    </th>
+                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">
+                      Sex
+                    </th>
+                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">
+                      Full Price
+                    </th>
+                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">
+                      5ml/10ml
+                    </th>
+                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">
+                      Stock
+                    </th>
+                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">
+                      Status
+                    </th>
+                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {products.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-8 text-center text-zinc-500 text-sm">
+                      <td
+                        colSpan={8}
+                        className="px-6 py-8 text-center text-zinc-500 text-sm"
+                      >
                         No products yet. Add your first product!
                       </td>
                     </tr>
@@ -694,27 +992,64 @@ const AdminDashboard = () => {
                     products.map((product) => (
                       <tr key={product.id} className="border-b border-zinc-800">
                         <td className="px-6 py-4 text-sm">{product.name}</td>
-                        <td className="px-6 py-4 text-sm">{product.price} dh</td>
-                        <td className="px-6 py-4 text-sm">{product.stock || 0}</td>
+                        <td className="px-6 py-4 text-sm capitalize">
+                          {product.category}
+                        </td>
+                        <td className="px-6 py-4 text-sm capitalize">
+                          {product.sex}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          {product.full_bottle_price} dh
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          {product.price_5ml > 0 || product.price_10ml > 0 ? (
+                            <span className="text-xs">
+                              {product.price_5ml > 0 &&
+                                `${product.price_5ml}dh`}
+                              {product.price_5ml > 0 &&
+                                product.price_10ml > 0 &&
+                                " / "}
+                              {product.price_10ml > 0 &&
+                                `${product.price_10ml}dh`}
+                            </span>
+                          ) : (
+                            <span className="text-zinc-500 text-xs">
+                              No decants
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          {product.stock || 0}
+                        </td>
                         <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs ${
-                            product.status === 'available' 
-                              ? 'bg-green-900/30 text-green-400' 
-                              : 'bg-red-900/30 text-red-400'
-                          }`}>
-                            {product.status || 'Available'}
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs ${
+                              product.status === "available"
+                                ? "bg-green-900/30 text-green-400"
+                                : product.status === "out_of_stock"
+                                  ? "bg-red-900/30 text-red-400"
+                                  : "bg-yellow-900/30 text-yellow-400"
+                            }`}
+                          >
+                            {product.status === "out_of_stock"
+                              ? "Out of Stock"
+                              : product.status === "coming_soon"
+                                ? "Coming Soon"
+                                : "Available"}
                           </span>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex gap-2">
-                            <button 
+                            <button
                               onClick={() => handleEditProduct(product)}
                               className="p-2 hover:bg-zinc-800 rounded transition-colors"
                             >
                               <Edit size={16} />
                             </button>
-                            <button 
-                              onClick={() => product.id && handleDeleteProduct(product.id)}
+                            <button
+                              onClick={() =>
+                                product.id && handleDeleteProduct(product.id)
+                              }
                               className="p-2 hover:bg-zinc-800 rounded transition-colors text-red-400"
                             >
                               <Trash2 size={16} />
@@ -730,28 +1065,46 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {activeTab === 'orders' && (
+        {activeTab === "orders" && (
           <div>
             <h2 className="text-xl font-semibold mb-6">Orders</h2>
             <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden">
               <table className="w-full">
                 <thead className="bg-zinc-800 border-b border-zinc-700">
                   <tr>
-                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">Order ID</th>
-                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">Customer</th>
-                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">Contact</th>
-                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">Products</th>
-                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">Total</th>
-                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">Status</th>
-                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">Date</th>
-                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">Actions</th>
+                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">
+                      Order ID
+                    </th>
+                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">
+                      Customer
+                    </th>
+                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">
+                      Contact
+                    </th>
+                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">
+                      Products
+                    </th>
+                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">
+                      Total
+                    </th>
+                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">
+                      Status
+                    </th>
+                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">
+                      Date
+                    </th>
+                    <th className="text-left px-6 py-4 text-xs uppercase tracking-wider text-zinc-400">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {orders.map((order) => (
                     <tr key={order.id} className="border-b border-zinc-800">
                       <td className="px-6 py-4 text-sm">{order.id}</td>
-                      <td className="px-6 py-4 text-sm">{order.customerName}</td>
+                      <td className="px-6 py-4 text-sm">
+                        {order.customerName}
+                      </td>
                       <td className="px-6 py-4 text-sm">
                         <div className="text-xs">
                           <div>{order.phone}</div>
@@ -761,34 +1114,42 @@ const AdminDashboard = () => {
                       <td className="px-6 py-4 text-sm">
                         {order.productName} ({order.size}) x{order.quantity}
                       </td>
-                      <td className="px-6 py-4 text-sm">{Number(order.totalPrice).toFixed(2)} dh</td>
+                      <td className="px-6 py-4 text-sm">
+                        {Number(order.totalPrice).toFixed(2)} dh
+                      </td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs ${
-                          order.status === 'done' 
-                            ? 'bg-green-900/30 text-green-400' 
-                            : 'bg-yellow-900/30 text-yellow-400'
-                        }`}>
-                          {order.status === 'done' ? 'Done' : 'Pending'}
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs ${
+                            order.status === "done"
+                              ? "bg-green-900/30 text-green-400"
+                              : "bg-yellow-900/30 text-yellow-400"
+                          }`}
+                        >
+                          {order.status === "done" ? "Done" : "Pending"}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm">{new Date(order.createdAt).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 text-sm">
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </td>
                       <td className="px-6 py-4">
                         <div className="flex gap-2">
-                          <button 
-                            onClick={() => handleStatusChange(order.id, 'done')}
+                          <button
+                            onClick={() => handleStatusChange(order.id, "done")}
                             className="p-2 hover:bg-green-900/30 rounded transition-colors text-green-400"
                             title="Mark as Done"
                           >
                             <Check size={16} />
                           </button>
-                          <button 
-                            onClick={() => handleStatusChange(order.id, 'pending')}
+                          <button
+                            onClick={() =>
+                              handleStatusChange(order.id, "pending")
+                            }
                             className="p-2 hover:bg-yellow-900/30 rounded transition-colors text-yellow-400"
                             title="Mark as Pending"
                           >
                             <Clock size={16} />
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleRemoveOrder(order.id)}
                             className="p-2 hover:bg-red-900/30 rounded transition-colors text-red-400"
                             title="Remove Order"
@@ -824,8 +1185,8 @@ const AdminDashboard = () => {
             isOpen: false,
             type: null,
             id: null,
-            title: '',
-            message: '',
+            title: "",
+            message: "",
           })
         }
         onConfirm={handleConfirmAction}

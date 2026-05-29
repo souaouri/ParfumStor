@@ -5,26 +5,65 @@ import path from 'path';
 
 export const addProduct = async (req: Request, res: Response) => {
     try {
-        const { name, price, description, stock, status } = req.body;
+        const { 
+            name, 
+            category, 
+            sex, 
+            description, 
+            full_bottle_price, 
+            price_5ml, 
+            price_10ml, 
+            stock, 
+            status 
+        } = req.body;
         
         // Get image paths from uploaded files
         const files = req.files as { [fieldname: string]: Express.Multer.File[] };
         const image = files?.image?.[0] ? `/uploads/${files.image[0].filename}` : undefined;
         const image2 = files?.image2?.[0] ? `/uploads/${files.image2[0].filename}` : undefined;
 
-        if (!name || !price) {
-            return res.status(400).json({ message: 'Name and price are required' });
+        // Validate required fields
+        if (!name || !category || !sex || full_bottle_price === undefined) {
+            return res.status(400).json({ 
+                message: 'Name, category, sex, and full_bottle_price are required' 
+            });
+        }
+
+        // Validate category values
+        if (!['original', 'copy'].includes(category)) {
+            return res.status(400).json({ 
+                message: 'Category must be either "original" or "copy"' 
+            });
+        }
+
+        // Validate sex values
+        if (!['men', 'women', 'unisex'].includes(sex)) {
+            return res.status(400).json({ 
+                message: 'Sex must be either "men", "women", or "unisex"' 
+            });
+        }
+
+        // Validate status values
+        if (status && !['available', 'out_of_stock', 'coming_soon'].includes(status)) {
+            return res.status(400).json({ 
+                message: 'Status must be "available", "out_of_stock", or "coming_soon"' 
+            });
         }
 
         const product = await createProduct({ 
             name, 
-            price: parseFloat(price), 
+            category,
+            sex,
             description, 
+            full_bottle_price: parseFloat(full_bottle_price),
+            price_5ml: price_5ml ? parseFloat(price_5ml) : 0,
+            price_10ml: price_10ml ? parseFloat(price_10ml) : 0,
             image,
             image2, 
             stock: stock ? parseInt(stock) : 0, 
             status: status || 'available' 
         });
+        
         return res.status(201).json({ message: 'Product created successfully', product });
     } catch (error) {
         console.error('Error adding product:', error);
@@ -118,7 +157,17 @@ export const modifyProduct = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'Invalid product ID' });
         }
 
-        const { name, price, description, stock, status } = req.body;
+        const { 
+            name, 
+            category, 
+            sex, 
+            description, 
+            full_bottle_price, 
+            price_5ml, 
+            price_10ml, 
+            stock, 
+            status 
+        } = req.body;
         
         // Get the existing product to check for old images
         const existingProduct = await getProductById(id);
@@ -153,14 +202,42 @@ export const modifyProduct = async (req: Request, res: Response) => {
             image2 = `/uploads/${files.image2[0].filename}`;
         }
 
-        if (!name || !price) {
-            return res.status(400).json({ message: 'Name and price are required' });
+        // Validate required fields
+        if (!name || !category || !sex || full_bottle_price === undefined) {
+            return res.status(400).json({ 
+                message: 'Name, category, sex, and full_bottle_price are required' 
+            });
+        }
+
+        // Validate category values
+        if (!['original', 'copy'].includes(category)) {
+            return res.status(400).json({ 
+                message: 'Category must be either "original" or "copy"' 
+            });
+        }
+
+        // Validate sex values
+        if (!['men', 'women', 'unisex'].includes(sex)) {
+            return res.status(400).json({ 
+                message: 'Sex must be either "men", "women", or "unisex"' 
+            });
+        }
+
+        // Validate status values
+        if (status && !['available', 'out_of_stock', 'coming_soon'].includes(status)) {
+            return res.status(400).json({ 
+                message: 'Status must be "available", "out_of_stock", or "coming_soon"' 
+            });
         }
 
         const product = await updateProduct(id, { 
             name, 
-            price: parseFloat(price), 
+            category,
+            sex,
             description, 
+            full_bottle_price: parseFloat(full_bottle_price),
+            price_5ml: price_5ml ? parseFloat(price_5ml) : 0,
+            price_10ml: price_10ml ? parseFloat(price_10ml) : 0,
             image,
             image2, 
             stock: stock ? parseInt(stock) : 0, 

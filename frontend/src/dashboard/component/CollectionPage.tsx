@@ -9,14 +9,14 @@ import Cart from "./Cart";
 interface Product {
   id: number;
   name: string;
-  full_bottle_price: number;
-  price_5ml: number;
-  price_10ml: number;
+  full_bottle_price: number | string;
+  price_5ml: number | string;
+  price_10ml: number | string;
   status: string;
-  image: string;
-  image2: string;
-  description: string;
-  stock: number;
+  image?: string;
+  image2?: string;
+  description?: string;
+  stock?: number;
   category: string;
   sex: string;
 }
@@ -50,6 +50,13 @@ const CollectionPage = () => {
     }
   });
 
+  // Helper function to safely convert price to number
+  const toNumber = (value: string | number | undefined): number => {
+    if (typeof value === "number") return value;
+    if (typeof value === "string") return parseFloat(value) || 0;
+    return 0;
+  };
+
   // Collection configuration based on sex
   const collectionConfig = {
     men: {
@@ -60,7 +67,7 @@ const CollectionPage = () => {
       gradient: "from-gray-900 via-gray-800 to-black",
       accentColor: "text-gray-900",
       buttonHover: "hover:bg-gray-900",
-      cardHover: "hover:shadow-2xl hover:shadow-gray-900/20",
+      cardHover: "",
       heroImage: "/men-collection-hero.jpg",
     },
     women: {
@@ -71,7 +78,7 @@ const CollectionPage = () => {
       gradient: "from-rose-900 via-rose-800 to-pink-900",
       accentColor: "text-rose-900",
       buttonHover: "hover:bg-rose-900",
-      cardHover: "hover:shadow-2xl hover:shadow-rose-900/20",
+      cardHover: "",
       heroImage: "/women-collection-hero.jpg",
     },
     unisex: {
@@ -82,7 +89,7 @@ const CollectionPage = () => {
       gradient: "from-purple-900 via-indigo-800 to-purple-900",
       accentColor: "text-purple-900",
       buttonHover: "hover:bg-purple-900",
-      cardHover: "hover:shadow-2xl hover:shadow-purple-900/20",
+      cardHover: "",
       heroImage: "/unisex-collection-hero.jpg",
     },
   };
@@ -92,7 +99,7 @@ const CollectionPage = () => {
     collectionConfig.men;
 
   // Helper function to get image URL
-  const getImageUrl = (imagePath: string) => {
+  const getImageUrl = (imagePath: string | undefined) => {
     if (!imagePath) return "https://via.placeholder.com/400x500?text=No+Image";
     const cleanPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
     return `http://localhost:5000${cleanPath}`;
@@ -129,7 +136,7 @@ const CollectionPage = () => {
   useEffect(() => {
     if (products.length > 0 && sex) {
       const filtered = products.filter(
-        (product) => product.sex.toLowerCase() === sex.toLowerCase(),
+        (product) => product.sex?.toLowerCase() === sex.toLowerCase(),
       );
       setFilteredProducts(filtered);
     } else if (products.length > 0 && !sex) {
@@ -143,6 +150,8 @@ const CollectionPage = () => {
 
   const handleAddToCart = (product: Product, e: React.MouseEvent) => {
     e.stopPropagation();
+    const price = toNumber(product.full_bottle_price);
+
     const existingItem = cartItems.find((item) => item.id === product.id);
 
     if (existingItem) {
@@ -159,9 +168,9 @@ const CollectionPage = () => {
         {
           id: product.id,
           name: product.name,
-          price: product.full_bottle_price.toString(),
+          price: price.toString(),
           quantity: 1,
-          image: product.image,
+          image: product.image || "",
         },
       ]);
     }
@@ -200,12 +209,12 @@ const CollectionPage = () => {
         onCheckoutSuccess={handleCheckoutSuccess}
       />
 
-      {/* Hero Section with dynamic gradient */}
+      {/* Hero Section with dynamic gradient - FULL WIDTH */}
       <section
-        className={`relative mt-[88px] overflow-hidden bg-gradient-to-r ${config.gradient}`}
+        className={`relative mt-[88px] w-full overflow-hidden bg-gradient-to-r ${config.gradient}`}
       >
         <div className="absolute inset-0 bg-black/20" />
-        <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-10 lg:px-16 py-24 md:py-32">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
           <div className="max-w-3xl">
             <p className="uppercase tracking-[0.3em] text-sm mb-4 text-white/80">
               {config.subtitle}
@@ -238,9 +247,9 @@ const CollectionPage = () => {
         </div>
       </section>
 
-      {/* Collection Stats Bar */}
-      <div className="border-b border-zinc-200 bg-[#faf8f4]">
-        <div className="max-w-7xl mx-auto px-6 md:px-10 lg:px-16 py-6">
+      {/* Collection Stats Bar - FULL WIDTH */}
+      <div className="w-full border-b border-zinc-200 bg-[#faf8f4]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-xs uppercase tracking-[0.25em] text-zinc-600">
             <span>
               {filteredProducts.length}{" "}
@@ -258,198 +267,198 @@ const CollectionPage = () => {
         </div>
       </div>
 
-      {/* Products Grid */}
-      <div
-        id="products-grid"
-        className="max-w-7xl mx-auto px-6 md:px-10 lg:px-16 py-16"
-      >
-        {loading ? (
-          // Loading skeletons
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="animate-pulse">
-                <div className="bg-gray-100 h-[420px] mb-6" />
-                <div className="h-4 bg-gray-100 mb-3 w-3/4" />
-                <div className="h-3 bg-gray-100 mb-2 w-1/2" />
-                <div className="h-3 bg-gray-100 w-1/3" />
-              </div>
-            ))}
-          </div>
-        ) : error ? (
-          // Error state
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">⚠️</div>
-            <p className="text-red-500 text-lg mb-4">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="border border-black text-black px-8 py-3 text-sm uppercase tracking-[0.25em] hover:bg-black hover:text-white transition-all duration-500"
-            >
-              Try Again
-            </button>
-          </div>
-        ) : filteredProducts.length === 0 ? (
-          // Empty state
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">🕯️</div>
-            <p className="text-zinc-500 text-lg mb-4">
-              No products found in this collection
-            </p>
-            <p className="text-zinc-400 text-sm mb-8">
-              Check back soon for new arrivals
-            </p>
-            <button
-              onClick={() => navigate("/")}
-              className="border border-black text-black px-8 py-3 text-sm uppercase tracking-[0.25em] hover:bg-black hover:text-white transition-all duration-500"
-            >
-              Back to Home
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
-            {filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                onClick={() => handleProductClick(product)}
-                className={`group cursor-pointer transition-all duration-500 ${config.cardHover}`}
+      {/* Products Grid - FULL WIDTH with responsive padding */}
+      <div id="products-grid" className="w-full bg-white">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+          {loading ? (
+            // Loading skeletons - Responsive grid
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
+              {[...Array(12)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="bg-gray-100 aspect-[3/4] mb-4" />
+                  <div className="h-3 bg-gray-100 mb-2 w-3/4" />
+                  <div className="h-2 bg-gray-100 mb-2 w-1/2" />
+                  <div className="h-2 bg-gray-100 w-1/3" />
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            // Error state
+            <div className="text-center py-20">
+              <div className="text-6xl mb-4">⚠️</div>
+              <p className="text-red-500 text-lg mb-4">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="border border-black text-black px-8 py-3 text-sm uppercase tracking-[0.25em] hover:bg-black hover:text-white transition-all duration-500"
               >
-                {/* Image Container with Quick Add Button */}
-                <div className="relative bg-gray-50 mb-6 overflow-hidden rounded-sm">
-                  <div className="relative h-[420px] flex items-center justify-center p-10">
-                    <img
-                      src={getImageUrl(product.image)}
-                      alt={product.name}
-                      className={`max-h-full object-contain transition-all duration-700 group-hover:scale-105 ${
-                        product.image2 ? "group-hover:opacity-0" : ""
-                      }`}
-                      loading="lazy"
-                    />
+                Try Again
+              </button>
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            // Empty state
+            <div className="text-center py-20">
+              <div className="text-6xl mb-4">🕯️</div>
+              <p className="text-zinc-500 text-lg mb-4">
+                No products found in this collection
+              </p>
+              <p className="text-zinc-400 text-sm mb-8">
+                Check back soon for new arrivals
+              </p>
+              <button
+                onClick={() => navigate("/")}
+                className="border border-black text-black px-8 py-3 text-sm uppercase tracking-[0.25em] hover:bg-black hover:text-white transition-all duration-500"
+              >
+                Back to Home
+              </button>
+            </div>
+          ) : (
+            // Product Grid - Responsive columns that fill full width
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
+              {filteredProducts.map((product) => {
+                const fullPrice = toNumber(product.full_bottle_price);
+                const price5ml = toNumber(product.price_5ml);
+                const price10ml = toNumber(product.price_10ml);
 
-                    {product.image2 && (
-                      <img
-                        src={getImageUrl(product.image2)}
-                        alt={`${product.name} hover`}
-                        className="absolute inset-0 w-full h-full object-contain opacity-0 transition-all duration-700 group-hover:opacity-100 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                    )}
-                  </div>
-
-                  {/* Stock Badge */}
-                  {product.stock > 0 && product.stock < 10 && (
-                    <div className="absolute top-4 right-4 bg-amber-500 text-white text-[10px] uppercase tracking-[0.15em] px-2 py-1">
-                      Low Stock
-                    </div>
-                  )}
-
-                  {/* Quick Action Buttons */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm translate-y-full group-hover:translate-y-0 transition-transform duration-500 p-4 flex gap-2">
-                    <button
-                      onClick={(e) => handleAddToCart(product, e)}
-                      disabled={product.status === "out_of_stock"}
-                      className={`flex-1 text-white py-2 text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${
-                        product.status === "out_of_stock"
-                          ? "bg-gray-400 cursor-not-allowed"
-                          : `bg-black ${config.buttonHover}`
-                      }`}
-                    >
-                      <ShoppingCart size={14} />
-                      {product.status === "out_of_stock"
-                        ? "Sold Out"
-                        : "Add to Cart"}
-                    </button>
-                    <button className="p-2 border border-black/20 hover:border-black transition-all">
-                      <Heart size={16} className="text-black" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Product Info */}
-                <div className="space-y-3">
-                  <h3
-                    className={`uppercase tracking-[0.22em] text-xs font-medium ${config.accentColor}`}
+                return (
+                  <div
+                    key={product.id}
+                    onClick={() => handleProductClick(product)}
+                    className={`group cursor-pointer transition-all duration-500 ${config.cardHover}`}
                   >
-                    {product.name}
-                  </h3>
+                    {/* Image Container */}
+                    <div className="relative bg-gray-50 mb-4 overflow-hidden aspect-[3/4]">
+                      <div className="absolute inset-0 flex items-center justify-center p-4">
+                        <img
+                          src={getImageUrl(product.image)}
+                          alt={product.name}
+                          className={`max-h-full max-w-full object-contain transition-all duration-700 group-hover:scale-105 ${
+                            product.image2 ? "group-hover:opacity-0" : ""
+                          }`}
+                          loading="lazy"
+                        />
 
-                  <p className="text-zinc-600 text-sm font-light">
-                    {product.full_bottle_price.toLocaleString()} MAD
-                  </p>
+                        {product.image2 && (
+                          <img
+                            src={getImageUrl(product.image2)}
+                            alt={`${product.name} hover`}
+                            className="absolute inset-0 w-full h-full object-contain opacity-0 transition-all duration-700 group-hover:opacity-100 group-hover:scale-105"
+                            loading="lazy"
+                          />
+                        )}
+                      </div>
 
-                  {/* Decant Options Badge */}
-                  {(product.price_5ml > 0 || product.price_10ml > 0) && (
-                    <div className="flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.15em] text-zinc-500">
-                      {product.price_5ml > 0 && (
-                        <span>5ml: {product.price_5ml} MAD</span>
-                      )}
-                      {product.price_5ml > 0 && product.price_10ml > 0 && (
-                        <span>•</span>
-                      )}
-                      {product.price_10ml > 0 && (
-                        <span>10ml: {product.price_10ml} MAD</span>
-                      )}
+                      {/* Stock Badge */}
+                      {product.stock &&
+                        product.stock > 0 &&
+                        product.stock < 10 && (
+                          <div className="absolute top-2 right-2 bg-amber-500 text-white text-[8px] md:text-[10px] uppercase tracking-[0.15em] px-2 py-1">
+                            Low Stock
+                          </div>
+                        )}
+
+                      {/* Quick Add Button - Visible on hover */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm translate-y-full group-hover:translate-y-0 transition-transform duration-500 p-3">
+                        <button
+                          onClick={(e) => handleAddToCart(product, e)}
+                          disabled={product.status === "out_of_stock"}
+                          className={`w-full text-white py-2 text-[10px] md:text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${
+                            product.status === "out_of_stock"
+                              ? "bg-gray-400 cursor-not-allowed"
+                              : `bg-black ${config.buttonHover}`
+                          }`}
+                        >
+                          <ShoppingCart size={14} />
+                          {product.status === "out_of_stock"
+                            ? "Sold Out"
+                            : "Add to Cart"}
+                        </button>
+                      </div>
                     </div>
-                  )}
 
-                  <span
-                    className={`block text-[11px] uppercase tracking-[0.18em]
-                      ${
-                        product.status === "available"
-                          ? "text-green-600"
-                          : product.status === "out_of_stock"
-                            ? "text-red-500"
-                            : product.status === "coming_soon"
-                              ? "text-amber-600"
-                              : "text-zinc-500"
-                      }`}
-                  >
-                    {product.status === "out_of_stock"
-                      ? "Sold Out"
-                      : product.status === "coming_soon"
-                        ? "Coming Soon"
-                        : "In Stock"}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                    {/* Product Info - Compact for full width */}
+                    <div className="space-y-1 md:space-y-2">
+                      <h3
+                        className={`uppercase tracking-[0.15em] md:tracking-[0.22em] text-[10px] md:text-[12px] font-medium truncate ${config.accentColor}`}
+                      >
+                        {product.name}
+                      </h3>
+
+                      <p className="text-zinc-600 text-xs md:text-sm font-light">
+                        {fullPrice.toLocaleString()} MAD
+                      </p>
+
+                      {/* Decant Options Badge - Compact */}
+                      {(price5ml > 0 || price10ml > 0) && (
+                        <div className="flex flex-wrap gap-1 text-[8px] md:text-[10px] uppercase tracking-[0.1em] text-zinc-500">
+                          {price5ml > 0 && <span>5ml: {price5ml}</span>}
+                          {price5ml > 0 && price10ml > 0 && (
+                            <span className="hidden md:inline">•</span>
+                          )}
+                          {price10ml > 0 && <span>10ml: {price10ml}</span>}
+                        </div>
+                      )}
+
+                      <span
+                        className={`block text-[9px] md:text-[11px] uppercase tracking-[0.15em]
+                          ${
+                            product.status === "available"
+                              ? "text-green-600"
+                              : product.status === "out_of_stock"
+                                ? "text-red-500"
+                                : product.status === "coming_soon"
+                                  ? "text-amber-600"
+                                  : "text-zinc-500"
+                          }`}
+                      >
+                        {product.status === "out_of_stock"
+                          ? "Sold Out"
+                          : product.status === "coming_soon"
+                            ? "Coming Soon"
+                            : "In Stock"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Collection Features Section */}
-      <section className="bg-[#faf8f4] border-t border-zinc-200 py-16">
-        <div className="max-w-7xl mx-auto px-6 md:px-10 lg:px-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+      {/* Collection Features Section - FULL WIDTH */}
+      <section className="w-full bg-[#faf8f4] border-t border-zinc-200 py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 md:gap-12">
             <div className="text-center group cursor-pointer">
-              <div className="text-4xl mb-4 transition-transform group-hover:scale-110 inline-block">
+              <div className="text-3xl md:text-4xl mb-3 transition-transform group-hover:scale-110 inline-block">
                 ✨
               </div>
-              <h3 className="text-xs uppercase tracking-[0.3em] mb-3 text-black">
+              <h3 className="text-[10px] md:text-xs uppercase tracking-[0.3em] mb-2 text-black">
                 Premium Quality
               </h3>
-              <p className="text-sm text-zinc-600 leading-relaxed">
-                100% authentic fragrances sourced from trusted suppliers
-                worldwide
+              <p className="text-xs text-zinc-600 leading-relaxed">
+                100% authentic fragrances from trusted suppliers worldwide
               </p>
             </div>
             <div className="text-center group cursor-pointer">
-              <div className="text-4xl mb-4 transition-transform group-hover:scale-110 inline-block">
+              <div className="text-3xl md:text-4xl mb-3 transition-transform group-hover:scale-110 inline-block">
                 🚚
               </div>
-              <h3 className="text-xs uppercase tracking-[0.3em] mb-3 text-black">
+              <h3 className="text-[10px] md:text-xs uppercase tracking-[0.3em] mb-2 text-black">
                 Free Shipping
               </h3>
-              <p className="text-sm text-zinc-600 leading-relaxed">
+              <p className="text-xs text-zinc-600 leading-relaxed">
                 On all orders over 500 MAD within Morocco
               </p>
             </div>
             <div className="text-center group cursor-pointer">
-              <div className="text-4xl mb-4 transition-transform group-hover:scale-110 inline-block">
+              <div className="text-3xl md:text-4xl mb-3 transition-transform group-hover:scale-110 inline-block">
                 💎
               </div>
-              <h3 className="text-xs uppercase tracking-[0.3em] mb-3 text-black">
+              <h3 className="text-[10px] md:text-xs uppercase tracking-[0.3em] mb-2 text-black">
                 Decant Service
               </h3>
-              <p className="text-sm text-zinc-600 leading-relaxed">
+              <p className="text-xs text-zinc-600 leading-relaxed">
                 Try before you commit with our 5ml & 10ml samples
               </p>
             </div>
