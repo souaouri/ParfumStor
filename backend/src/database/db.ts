@@ -48,6 +48,21 @@ export async function initializeDatabase() {
         `);
 
     await pool.query(`
+      ALTER TABLE products
+      
+      DROP COLUMN IF EXISTS price,
+      
+      ADD COLUMN IF NOT EXISTS category VARCHAR(20),
+      
+      ADD COLUMN IF NOT EXISTS sex VARCHAR(20),
+      
+      ADD COLUMN IF NOT EXISTS full_bottle_price DECIMAL(10,2),
+      
+      ADD COLUMN IF NOT EXISTS price_5ml DECIMAL(10,2),
+      
+      ADD COLUMN IF NOT EXISTS price_10ml DECIMAL(10,2);
+`);
+    await pool.query(`
             CREATE TABLE IF NOT EXISTS orders (
                 id SERIAL PRIMARY KEY,
                 user_id INTEGER REFERENCES users(id),
